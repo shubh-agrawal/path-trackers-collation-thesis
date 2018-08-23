@@ -1,0 +1,10 @@
+<launch>
+	<node pkg="mahindra_simulation-master" type="controls" name="controls">
+	</node>
+	<node pkg="mahindra_simulation-master" type="path_tracking" name="path_tracking">
+	</node>
+	<node pkg="mahindra_simulation-master" type="prius_cmd" name="prius_cmd">
+	</node>
+	<node pkg="mahindra_simulation-master" type="frenet_planner" name="frenet_planner">
+	</node>
+</launch>

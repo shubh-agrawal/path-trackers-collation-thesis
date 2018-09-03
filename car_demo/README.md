@@ -49,3 +49,7 @@ If you want to run RVIZ on your own PC, then accordingly modify the the containe
 An [RVIZ](http://wiki.ros.org/rviz) window will open showing the car and sensor output.
 A gazebo window will appear showing the simulation.
 Either use the controller to drive the prius around the world, or click on the gazebo window and use the `WASD` keys to drive the car.
+
+
+After a successfull launch, you should be able to see rostopics upon listing on the host terminal. Also, check echo for /clock. If no messages are received, then there's a problem with your launch commands. If the simulator runs without any issue, you can go ahead with subscribing/publishing to topics. 
+

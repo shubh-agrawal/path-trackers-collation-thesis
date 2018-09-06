@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 '''
-PID_MIT_tracker
+PID_MIT_velocity_controller
 This code is using adaptive PID with MIT rule for tuning the velocity 
 Used along with path tracking controller 
-Authors - Adarsh Patnaik,     
+Authors - Adarsh Patnaik     
 '''
 import rospy
 import math
@@ -14,14 +14,14 @@ from nav_msgs.msg import Odometry
 import thread
 from prius_msgs.msg import Control
 
-# Node name       - controls
+# Node name        - controls
 # Published topic  - pid_output (Twist)
 # Subscriber topic - cmd_vel, cmd_delta, base_pose_ground_truth 
 
 gear_stat = "F"
 tar_vel = 0 # target velocity
 tar_omega = 0 # target omega
-act_vel_can = 0 # current velocity
+active_vel = 0 # current velocity
 error_sum = 0
 prev_error = 0
 error_diff = 0
@@ -67,7 +67,6 @@ def prius_pub(data):
 		print (prius_vel.brake)
 
 	prius_vel.steer = data.angular.z / 30
-	#print "steering:", prius_vel.steer
 
 	pub.publish(prius_vel)
 
@@ -79,7 +78,7 @@ def callback_feedback(data):
 	:params output [Twist]
 	:params plot [Twist]
 	'''
-	global act_vel_can
+	global active_vel
 	global tar_vel
 	global tar_omega
 	global wheelbase
@@ -113,12 +112,12 @@ def callback_feedback(data):
 	last_recorded_vel = (data.twist.twist.linear.x * math.cos(yaw) +
 		data.twist.twist.linear.y * math.sin(yaw))
 
-	act_vel_can = last_recorded_vel
+	active_vel = last_recorded_vel
 
 	plot = Twist()
 	output = Twist()
 
-	error = tar_vel - act_vel_can
+	error = tar_vel - active_vel
 	error_sum += error
 	error_diff = error - prev_error
 	prev_error = error
@@ -142,8 +141,8 @@ def callback_feedback(data):
 			brake_threshold)
 
 	plot.linear.x = tar_vel
-	plot.linear.y = act_vel_can
-	plot.linear.z = tar_vel - act_vel_can  # error term
+	plot.linear.y = active_vel
+	plot.linear.z = tar_vel - active_vel  # error term
 	# thresholding the forward velocity
 	if output.linear.x > 100:
 		output.linear.x = 100
@@ -152,7 +151,9 @@ def callback_feedback(data):
 	# thresholding the angle
 	output.angular.z = min(30.0, max(-30.0, tar_delta))
 
-	print output
+	rospy.loginfo("linear velocity : %f",output.linear.y)
+	rospy.loginfo("target linear velocity : %f",output.linear.x)
+	rospy.loginfo("delta : %f",output.angular.z)
 	prius_pub(output)
 	pub1.publish(plot)
 

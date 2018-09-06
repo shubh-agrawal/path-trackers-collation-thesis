@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-AdpPID_tracker
+AdpPID_velocity_controller
 This code is using adaptive PID for tuning the velocity 
 Used along with path tracking controller
 Link to reference paper- http://oa.upm.es/30015/1/INVE_MEM_2013_165545.pdf 
@@ -24,7 +24,7 @@ gear_stat = "F"
 global pub
 global tar_vel
 global tar_delta
-act_vel_can = 0
+active_vel = 0
 error_sum = 0
 prev_error = 0
 error_diff = 0
@@ -104,7 +104,7 @@ def callback_feedback(data):
 
 	:param yaw: (float)
 	"""
-	global act_vel_can
+	global active_vel
 	global tar_vel
 	global wheelbase
 	global error_sum
@@ -123,7 +123,6 @@ def callback_feedback(data):
 	global gear_stat
 	global acc_thershold
 	global brake_threshold
-	global act_velocity
 	global yp
 	global yi
 	global yd
@@ -143,9 +142,9 @@ def callback_feedback(data):
 	last_recorded_vel = (data.twist.twist.linear.x * math.cos(yaw) +
 						data.twist.twist.linear.y * math.sin(yaw))
 
-	act_vel_can = last_recorded_vel
+	active_vel = last_recorded_vel
 
-	error = tar_vel - act_vel_can
+	error = tar_vel - active_vel
 	error_sum += error
 	error_diff = error - prev_error
 
@@ -192,8 +191,8 @@ def callback_feedback(data):
 						   kd * error_diff) - brake_threshold
 
 	plot.linear.x = tar_vel  #target velocity
-	plot.linear.y = act_vel_can  #current velocity
-	plot.linear.z = tar_vel - act_vel_can  # error term
+	plot.linear.y = active_vel  #current velocity
+	plot.linear.z = tar_vel - active_vel  # error term
 	plot.angular.x = filtered_error
 
 	#Limiting the values of target velocity
@@ -205,7 +204,9 @@ def callback_feedback(data):
 	#Limiting the steering angle between [-30,30]    
 	output.angular.z = min(30, max(-30, tar_delta)) 
 
-	print output
+	rospy.loginfo("linear velocity : %f",output.linear.y)
+	rospy.loginfo("target linear velocity : %f",output.linear.x)
+	rospy.loginfo("delta : %f",output.angular.z)
 	prius_pub(output)
 	pub1.publish(plot)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-PID_Control
+PID_velocity_tuner
 This code applies PID controller on velocity.
 Authors : Het Shah
 '''
@@ -20,7 +20,7 @@ from prius_msgs.msg import Control
 gear_stat = "F"
 tar_vel = 0 # target velocity
 tar_omega = 0 # target omega
-act_vel_can = 0 # measured velocity 
+active_vel = 0 # measured velocity 
 error_sum = 0 
 prev_error = 0
 error_diff = 0
@@ -86,7 +86,6 @@ def prius_pub(data):
 		print (prius_vel.brake)
 
 	prius_vel.steer = data.angular.z / 30
-	#print "steering:", prius_vel.steer
 
 	pub.publish(prius_vel)
 
@@ -98,7 +97,7 @@ def callback_feedback(data):
 	:params output [Twist]
 	:params plot [Twist]  
 	'''
-	global act_vel_can # velcoity of the bot
+	global active_vel # velcoity of the bot
 	global tar_vel # target velocity
 	global tar_delta # target delta
 	global tar_omega # target omega
@@ -134,12 +133,12 @@ def callback_feedback(data):
 						 data.twist.twist.linear.y * math.sin(yaw))
 	# last_recorded_ang = data.twist.twist.angular.z
 
-	act_vel_can = last_recorded_vel
+	active_vel = last_recorded_vel
   
 	plot = Twist()
 	output = Twist()
 	# PID control applied
-	error = tar_vel - act_vel_can
+	error = tar_vel - active_vel
 	error_sum += error
 	error_diff = error - prev_error
 	prev_error = error
@@ -159,8 +158,8 @@ def callback_feedback(data):
 						   brake_threshold)
 
 	plot.linear.x = tar_vel
-	plot.linear.y = act_vel_can
-	plot.linear.z = tar_vel - act_vel_can  # error term
+	plot.linear.y = active_vel
+	plot.linear.z = tar_vel - active_vel  # error term
 
 	# output.linear.x = 100
 	print output.linear.x
@@ -174,7 +173,9 @@ def callback_feedback(data):
 	output.angular.z = min(
 		80, max(-80, convert(tar_vel, tar_omega, wheelbase)))
 
-	print output
+	rospy.loginfo("linear velocity : %f",output.linear.y)
+	rospy.loginfo("target linear velocity : %f",output.linear.x)
+	rospy.loginfo("delta : %f",output.angular.z)
 	prius_pub(output)
 	pub1.publish(plot)
 

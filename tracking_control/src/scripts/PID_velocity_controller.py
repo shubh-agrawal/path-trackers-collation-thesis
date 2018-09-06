@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-PID_tracker
+PID_velocity_controller
 This code implements a simple PID controller for path tracking.
 Author : Het Shah
 '''
@@ -20,7 +20,7 @@ from prius_msgs.msg import Control
 gear_stat = "F"
 tar_vel = 0 # target velocity
 tar_omega = 0 # target omega
-act_vel_can = 0 # current velocity of robot
+active_vel = 0 # current velocity of robot
 error_sum = 0
 prev_error = 0
 error_diff = 0
@@ -48,7 +48,7 @@ def callback_feedback(data):
 	:params output [Twist]
 	:params plot [Twist] 
 	'''
-	global act_vel_can
+	global active_vel
 	global tar_vel
 	global tar_delta
 	global tar_omega
@@ -83,12 +83,12 @@ def callback_feedback(data):
 						 data.twist.twist.linear.y * math.sin(yaw))
 	
 
-	act_vel_can = last_recorded_vel
+	active_vel = last_recorded_vel
 
 	plot = Twist()
 	output = Twist()
 	# applying PID on the Velocity
-	error = tar_vel - act_vel_can
+	error = tar_vel - active_vel
 	error_sum += error
 	error_diff = error - prev_error
 	prev_error = error
@@ -108,8 +108,8 @@ def callback_feedback(data):
 						   brake_threshold)
 
 	plot.linear.x = tar_vel
-	plot.linear.y = act_vel_can
-	plot.linear.z = tar_vel - act_vel_can  # error term
+	plot.linear.y = active_vel
+	plot.linear.z = tar_vel - active_vel  # error term
 
 	print output.linear.x
 	# thresholding the forward velocity within -100 to 100
@@ -119,8 +119,10 @@ def callback_feedback(data):
 		output.linear.x = -100
 	# Thresholding the steering angle between 30 degrees and -30 degrees
 	output.angular.z = min(30.0, max(-30.0, tar_delta))
+	rospy.loginfo("linear velocity : %f",output.linear.y)
+	rospy.loginfo("target linear velocity : %f",output.linear.x)
+	rospy.loginfo("delta : %f",output.angular.z)
 	# publish the msg
-	print output
 	prius_pub(output)
 	pub1.publish(plot)
 

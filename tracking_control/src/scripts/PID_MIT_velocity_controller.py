@@ -12,6 +12,7 @@ from std_msgs.msg import Int16
 from sensor_msgs.msg import Joy
 from nav_msgs.msg import Odometry
 import thread
+from prius_msgs.msg import Control
 
 # Node name       - controls
 # Published topic  - pid_output (Twist)
@@ -43,6 +44,32 @@ global pub
 
 tar_vel = 0
 tar_omega = 0
+
+
+def prius_pub(data):
+	'''
+	publishes the velocity and steering angle
+	published on topic : ackermann_cmd_topic
+	'''
+	global prius_vel
+	prius_vel = Control()
+
+	if(data.linear.x > 0):
+		prius_vel.throttle = data.linear.x / 100
+		prius_vel.brake = 0
+		print ("acc")
+		print (prius_vel.throttle)
+
+	if(data.linear.x < 0):
+		prius_vel.brake = -data.linear.x / 100
+		prius_vel.throttle = 0
+		print ("brake")
+		print (prius_vel.brake)
+
+	prius_vel.steer = data.angular.z / 30
+	#print "steering:", prius_vel.steer
+
+	pub.publish(prius_vel)
 
 
 def callback_feedback(data):
@@ -125,7 +152,8 @@ def callback_feedback(data):
 	# thresholding the angle
 	output.angular.z = min(30.0, max(-30.0, tar_delta))
 
-	pub.publish(output)
+	print output
+	prius_pub(output)
 	pub1.publish(plot)
 
 
@@ -155,8 +183,9 @@ def callback_delta(data):
 def start():
 	global pub
 	global pub1
+	ackermann_cmd_topic = rospy.get_param('~ackermann_cmd_topic', '/prius')
 	rospy.init_node('controls', anonymous=True)
-	pub = rospy.Publisher('pid_output', Twist, queue_size=10)
+	pub = rospy.Publisher(ackermann_cmd_topic, Control, queue_size=10)
 	pub1 = rospy.Publisher('plot', Twist, queue_size=10)
 	rospy.Subscriber("cmd_vel", Twist, callback_cmd_vel)
 	rospy.Subscriber("cmd_delta", Twist, callback_delta)

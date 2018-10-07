@@ -18,7 +18,8 @@ from std_msgs.msg import Int64
 # Subscribe topic- base_pose_ground_truth , astroid_path
 
 global steer
-kp = 1  #gain parameter
+kp = 2  #gain parameter
+alpha = 0.5
 wheelbase = 1.983  #in meters
 
 def callback_feedback(data):
@@ -75,6 +76,8 @@ def callback_path(data):
     """
     global ep
     global cp
+    global bot_theta1
+
 
     x_p = data
 
@@ -85,7 +88,7 @@ def callback_path(data):
     ep = min(distances)
 
     cp = distances.index(ep)
-    print ("cp %f ep %f" % (cp, ep))
+    
     cmd = Twist()
     cross2 = [(x - data.poses[cp].pose.position.x),
               (y - data.poses[cp].pose.position.y)]
@@ -93,6 +96,7 @@ def callback_path(data):
     cross_prod = cross[0] * cross2[1] - cross[1] * cross2[0]
     if (cross_prod > 0):
         ep = -ep
+    #print ("cp %f ep %f" % (cp, ep))
 
     siny = +2.0 * (x_p.poses[cp].pose.orientation.w *
                    x_p.poses[cp].pose.orientation.z +
@@ -103,12 +107,20 @@ def callback_path(data):
                          x_p.poses[cp].pose.orientation.z *
                          x_p.poses[cp].pose.orientation.z)
 
-    steer_path = math.atan2(siny, cosy)
-    steer_err = (bot_theta - steer_path) * (-1)
-    tan = math.atan(kp * ep / bot_vel)
-    delta = steer_err + tan
+    #steer_path = math.atan2(siny, cosy)
+    
+    steer_path = math.atan2(x_p.poses[i].pose.position.y - x_p.poses[i-1].pose.position.y, x_p.poses[i].pose.position.x - x_p.poses[i-1].pose.position.x )
 
+    bot_theta1 = (bot_theta + math.pi) % math.pi  #converts bot_theta [-pi to pi] to [0 to pi]
+    steer_err = (bot_theta1 - steer_path) * (-1)
+
+    tan = math.atan(ep / kp)   
+     
+    delta = (alpha*steer_err + tan)
+    #print ("steer err %f bot_theta %f steer_path %f" % (steer_err, bot_theta1, steer_path))
+    
     delta = delta * 180 / 3.14  #converting delta into degrees from radian
+    print delta
     cmd.angular.z = delta
     pub1.publish(cmd)
 

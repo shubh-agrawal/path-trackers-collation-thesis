@@ -35,7 +35,10 @@ LQR parameters
 Q matrix penalises the error input state x
 R matrix penalises the  
 '''
-Q = np.eye(4)
+Q = 100*np.eye(4)
+Q[1, 1] = 0
+Q[2, 2] = 0
+Q[3, 3] = 0
 R = np.matrix([[1]])
 
 # Other parameters
@@ -74,7 +77,7 @@ def callback_feedback(data):
                          data.pose.pose.orientation.z *
                          data.pose.pose.orientation.z)
     state.yaw = math.atan2(siny, cosy) # yaw in radians  
-
+    
     state.v = (data.twist.twist.linear.x * math.cos(state.yaw) +
                 data.twist.twist.linear.y * math.sin(state.yaw))
 
@@ -93,6 +96,7 @@ def callback_feedback(data):
                                 x_p.poses[ind].pose.position.x - x_p.poses[ind-1].pose.position.x )
 
         e_th = pi_2_pi(state.yaw - path_angle)
+
         
         delta_lqr  = lqr_steering_control(state, e, e_th, pe, pe_th, x_p) 
         cmd_steer = Twist()
@@ -140,9 +144,6 @@ def dlqr(A, B, Q, R):
     K = np.matrix(la.inv(B.T * X * B + R) * (B.T * X * A))  
     eigVals, eigVecs = la.eig(A - B * K)
 
-    # Solving using control library 
-    #K, S, E = control.lqr(A, B, Q, R)
-
     return K, X, eigVals
 
 def dist(a,x,y):
@@ -155,24 +156,43 @@ def lqr_steering_control(state, e, e_th, pe, pe_th, x_p):
             previous and current angle error 
     '''
     v = state.v
-    
+
     A = np.matrix(np.zeros((4,4)))
+    B = np.matrix(np.zeros((4, 1)))
+
+    '''
+    Simple Kinematic Model
     A[0, 0] = 1.0
     A[0, 1] = dt
     A[1, 2] = v
     A[2, 2] = 1.0
     A[2, 3] = dt
+    
+    B[3, 0] = v / L  
+    '''
 
-    B = np.matrix(np.zeros((4, 1)))
-    B[3, 0] = v / L    
+    # Dynamic Model converted to state space assuming constant velocity 1m/s, Cf = Cr = 155494, m = 1140 kg, Iz = 1436
+    A[0,0] = 1.0
+    A[0,1] = 0.0037
+    A[0,2] = 0.0963
+    A[0,3] = 0.0003
+    A[1,2] = 1.0
+    A[1,3] = 0.0034
+    A[2,2] = 1.0
+    A[2,3] = 0.0963
+
+    B[0,0] = 0.050025784700646
+    B[1,0] = 0.539884777742374 
+    B[2,0] = 0.041458048416231
+    B[3,0] = 0.429184549356149
 
     K, _, _ = dlqr(A, B, Q, R)
 
     #State matrix x
     x = np.matrix(np.zeros((4, 1)))
 
-    x[0, 0] = e
-    x[1, 0] = (e - pe) / dt
+    x[0, 0] = -e
+    x[1, 0] = -(e - pe) / dt
     x[2, 0] = e_th
     x[3, 0] = (e_th - pe_th) / dt
 
@@ -180,7 +200,7 @@ def lqr_steering_control(state, e, e_th, pe, pe_th, x_p):
     u = -K * x   
 
     #calc steering input    
-    fb = u[0, 0]
+    fb =u[0, 0]
     
     # Feedforward Term ff 
     ff = 0

@@ -20,6 +20,7 @@ from prius_msgs.msg import Control
 gear_stat = "F"
 tar_vel = 0 # target velocity
 tar_omega = 0 # target omega
+tar_delta = 0
 active_vel = 0 # current velocity of robot
 error_sum = 0
 prev_error = 0
@@ -178,7 +179,7 @@ def start():
 	global pub1
 	ackermann_cmd_topic = rospy.get_param('~ackermann_cmd_topic', '/prius')
 	rospy.init_node('controls', anonymous=True)
-	pub = rospy.Publisher(ackermann_cmd_topic, Control, queue_size=10)
+	pub = rospy.Publisher('ackermann_cmd_topic', Control, queue_size=10)
 	pub1 = rospy.Publisher('plot', Twist, queue_size=10)
 	rospy.Subscriber("cmd_vel", Twist, callback_cmd_vel)
 	rospy.Subscriber("cmd_delta", Twist, callback_delta)

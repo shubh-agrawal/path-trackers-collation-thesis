@@ -18,7 +18,11 @@ from std_msgs.msg import Int64
 # Subscribe topic- base_pose_ground_truth , astroid_path
 
 global steer
+<<<<<<< HEAD:tracking_control/src/scripts/tracking_Methods/stanley_method.py
 kp = 10  #gain parameter
+=======
+kp = 2  #gain parameter
+>>>>>>> master:tracking_control/src/scripts/stanley_method.py
 alpha = 0.5
 wheelbase = 1.983  #in meters
 global n
@@ -100,6 +104,7 @@ def callback_path(data):
     global ep
     global cp
     global bot_theta1
+<<<<<<< HEAD:tracking_control/src/scripts/tracking_Methods/stanley_method.py
     global ep_max
     global ep_sum
     global ep_avg
@@ -107,6 +112,10 @@ def callback_path(data):
     global path_length
 
     cross_err = Twist()
+=======
+
+
+>>>>>>> master:tracking_control/src/scripts/stanley_method.py
     x_p = data
     calc_path_length(x_p)
 
@@ -131,6 +140,7 @@ def callback_path(data):
     cross_prod = cross[0] * cross2[1] - cross[1] * cross2[0]
     if (cross_prod > 0):
         ep = -ep
+    #print ("cp %f ep %f" % (cp, ep))
 
     cross_err.linear.x = ep
     cross_err.angular.x = ep_max
@@ -148,12 +158,24 @@ def callback_path(data):
     #steer_path = math.atan2(siny, cosy)
     
     steer_path = math.atan2(x_p.poses[i].pose.position.y - x_p.poses[i-1].pose.position.y, x_p.poses[i].pose.position.x - x_p.poses[i-1].pose.position.x )
+<<<<<<< HEAD:tracking_control/src/scripts/tracking_Methods/stanley_method.py
 
     bot_theta1 = (bot_theta + math.pi) % math.pi  #converts bot_theta [-pi to pi] to [0 to pi]
     steer_err = (bot_theta1 - steer_path) * (-1)
     tan = math.atan(ep / kp)   
     delta = (alpha*steer_err + tan)
     #print ("steer err %f bot_theta %f steer_path %f" % (steer_err, bot_theta1, steer_path))
+=======
+
+    bot_theta1 = (bot_theta + math.pi) % math.pi  #converts bot_theta [-pi to pi] to [0 to pi]
+    steer_err = (bot_theta1 - steer_path) * (-1)
+
+    tan = math.atan(ep / kp)   
+     
+    delta = (alpha*steer_err + tan)
+    #print ("steer err %f bot_theta %f steer_path %f" % (steer_err, bot_theta1, steer_path))
+    
+>>>>>>> master:tracking_control/src/scripts/stanley_method.py
     delta = delta * 180 / 3.14  #converting delta into degrees from radian
     print delta
     cmd.angular.z = delta

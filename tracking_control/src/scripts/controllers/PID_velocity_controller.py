@@ -41,6 +41,31 @@ global tar_delta
 tar_vel = 0
 tar_omega = 0
 
+def prius_pub(data):
+	'''
+	publishes the velocity and steering angle
+	published on topic : ackermann_cmd_topic
+	'''
+	global prius_vel
+	prius_vel = Control()
+
+	if(data.linear.x > 0):
+		prius_vel.throttle = data.linear.x / 100
+		prius_vel.brake = 0
+		print ("acc")
+		print (prius_vel.throttle)
+
+	if(data.linear.x < 0):
+		prius_vel.brake = -data.linear.x / 100
+		prius_vel.throttle = 0
+		print ("brake")
+		print (prius_vel.brake)
+
+	prius_vel.steer = data.angular.z / 30
+	#print "steering:", prius_vel.steer
+
+	pub.publish(prius_vel)
+
 
 def callback_feedback(data):
 	'''
@@ -112,16 +137,18 @@ def callback_feedback(data):
 	plot.linear.y = active_vel
 	plot.linear.z = tar_vel - active_vel  # error term
 
-	print output.linear.x
+
 	# thresholding the forward velocity within -100 to 100
 	if output.linear.x > 100:
 		output.linear.x = 100
 	if output.linear.x < -100:
 		output.linear.x = -100
+
+
 	# Thresholding the steering angle between 30 degrees and -30 degrees
 	output.angular.z = min(30.0, max(-30.0, tar_delta))
-	rospy.loginfo("linear velocity : %f",output.linear.y)
-	rospy.loginfo("target linear velocity : %f",output.linear.x)
+	rospy.loginfo("linear velocity : %f",plot.linear.y)
+	rospy.loginfo("target linear velocity : %f",plot.linear.x)
 	rospy.loginfo("delta : %f",output.angular.z)
 	# publish the msg
 	prius_pub(output)
@@ -149,37 +176,14 @@ def callback_delta(data):
 	global tar_delta
 	tar_delta = data.angular.z
 
-def prius_pub(data):
-	'''
-	publishes the velocity and steering angle
-	published on topic : ackermann_cmd_topic
-	'''
-	global prius_vel
-	prius_vel = Control()
 
-	if(data.linear.x > 0):
-		prius_vel.throttle = data.linear.x / 100
-		prius_vel.brake = 0
-		print ("acc")
-		print (prius_vel.throttle)
-
-	if(data.linear.x < 0):
-		prius_vel.brake = -data.linear.x / 100
-		prius_vel.throttle = 0
-		print ("brake")
-		print (prius_vel.brake)
-
-	prius_vel.steer = data.angular.z / 30
-	#print "steering:", prius_vel.steer
-
-	pub.publish(prius_vel)
 
 def start():
 	global pub
 	global pub1
 	ackermann_cmd_topic = rospy.get_param('~ackermann_cmd_topic', '/prius')
 	rospy.init_node('controls', anonymous=True)
-	pub = rospy.Publisher('ackermann_cmd_topic', Control, queue_size=10)
+	pub = rospy.Publisher(ackermann_cmd_topic, Control, queue_size=10)
 	pub1 = rospy.Publisher('plot', Twist, queue_size=10)
 	rospy.Subscriber("cmd_vel", Twist, callback_cmd_vel)
 	rospy.Subscriber("cmd_delta", Twist, callback_delta)
@@ -187,6 +191,5 @@ def start():
 	rospy.spin()
 
 
-if __name__ == '__main__':
-		
+if __name__ == '__main__':	
 	start()

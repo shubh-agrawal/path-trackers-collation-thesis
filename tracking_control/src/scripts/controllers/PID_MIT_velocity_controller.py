@@ -153,8 +153,8 @@ def callback_feedback(data):
 	# thresholding the angle
 	output.angular.z = min(30.0, max(-30.0, tar_delta))
 
-	rospy.loginfo("linear velocity : %f",output.linear.y)
-	rospy.loginfo("target linear velocity : %f",output.linear.x)
+	rospy.loginfo("linear velocity : %f",plot.linear.y)
+	rospy.loginfo("target linear velocity : %f",plot.linear.x)
 	rospy.loginfo("delta : %f",output.angular.z)
 	prius_pub(output)
 	pub1.publish(plot)
@@ -193,7 +193,6 @@ def start():
 	rospy.Subscriber("cmd_vel", Twist, callback_cmd_vel)
 	rospy.Subscriber("cmd_delta", Twist, callback_delta)
 	rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
-
 	rospy.spin()
 
 

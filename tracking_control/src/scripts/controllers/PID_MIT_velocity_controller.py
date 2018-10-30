@@ -130,9 +130,11 @@ def callback_feedback(data):
 	kp = kp + yp * error * error
 	ki = ki + yi * error * error_sum
 	kd = kd + yd * error * error_diff
-	print kp
-	print ki
-	print kd
+
+	rospy.loginfo("kp is : %f",kp)
+	rospy.loginfo("ki is : %f",ki)
+	rospy.loginfo("kd is : %f",kd)
+
 	# PID on velocity with updated parameters
 	if error > 0.01:
 		output.linear.x = (kp * error + ki * error_sum + kd * error_diff)
@@ -151,8 +153,8 @@ def callback_feedback(data):
 	# thresholding the angle
 	output.angular.z = min(30.0, max(-30.0, tar_delta))
 
-	rospy.loginfo("linear velocity : %f",output.linear.y)
-	rospy.loginfo("target linear velocity : %f",output.linear.x)
+	rospy.loginfo("linear velocity : %f",plot.linear.y)
+	rospy.loginfo("target linear velocity : %f",plot.linear.x)
 	rospy.loginfo("delta : %f",output.angular.z)
 	prius_pub(output)
 	pub1.publish(plot)
@@ -191,7 +193,6 @@ def start():
 	rospy.Subscriber("cmd_vel", Twist, callback_cmd_vel)
 	rospy.Subscriber("cmd_delta", Twist, callback_delta)
 	rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
-
 	rospy.spin()
 
 

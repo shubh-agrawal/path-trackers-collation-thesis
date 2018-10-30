@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 '''
-PID_velocity_tuner
-This code applies PID controller on velocity.
-Authors : Het Shah
+PID_MIT_velocity_controller
+This code is using adaptive PID with MIT rule for tuning the velocity 
+Used along with path tracking controller 
+Authors - Adarsh Patnaik     
 '''
 import rospy
 import math
@@ -13,56 +14,36 @@ from nav_msgs.msg import Odometry
 import thread
 from prius_msgs.msg import Control
 
-# Node name       - controls
-# Publishe topic  - pid_output (Twist)
-# Subscribe topic - base_pose_ground_truth , cmd_vel, cmd_delta (Twist)
+# Node name        - controls
+# Published topic  - pid_output (Twist)
+# Subscriber topic - cmd_vel, cmd_delta, base_pose_ground_truth 
 
 gear_stat = "F"
 tar_vel = 0 # target velocity
 tar_omega = 0 # target omega
-active_vel = 0 # measured velocity 
-error_sum = 0 
+active_vel = 0 # current velocity
+error_sum = 0
 prev_error = 0
 error_diff = 0
-output = 0 
+output = 0
 wheelbase = 1.958  # in meters
-radius = 0 # radius of curvature
-steering_angle = 0
-kp = 1000.0 # proportional gain
-ki = 1.5 # integral gain
-kd = 0.8 # differential gain
-acc_thershold = 0 # threshold velocity for acceleration
-brake_threshold = 0 # threshold veocity for braking
+radius = 0 # radius of curvature of path
+steering_angle = 0 # steering angle
+
+kp = 8.0 # proprtional gain
+ki = 2.0 # integral gain
+kd = 0.2 # derivative gain
+
+yp = 20.0 # kp gain
+yi = 0.5 # ki gain
+yd = 0.1 # kd gain
+
+acc_thershold = 0 #threshold for acceleration
+brake_threshold = 20 # threshold for braking
 global pub
-global tar_vel
-global tar_omega
+
 tar_vel = 0
 tar_omega = 0
-
-def convert(v, omega, wheelbase):
-	'''
-	convert omega to angle in degrees
-	: params v [float]
-	: params omega [float]
-	: params wheelbase [float]
-	returns angle in degrees
-	'''
-	
-	if omega == 0 or v == 0:
-		return 0
-	
-	radius = v / omega
-	# checking the sign of radius of the path
-	if omega > 0 and v > 0:
-		radius = -abs(radius)
-	if omega > 0 and v < 0:
-		radius = abs(radius)
-	if omega < 0 and v > 0:
-		radius = abs(radius)
-	if omega < 0 and v < 0:
-		radius = -abs(radius)
-
-	return math.atan(wheelbase / radius) * 180 / 3.14
 
 
 def prius_pub(data):
@@ -92,17 +73,16 @@ def prius_pub(data):
 
 def callback_feedback(data):
 	'''
-	applies PID control to the velocity
-	:params data [Twist]
+	Applies adaptive PID to velcity input from odom readings and publishes.
+	:params data [Odometry]
 	:params output [Twist]
-	:params plot [Twist]  
+	:params plot [Twist]
 	'''
-	global active_vel # velcoity of the bot
-	global tar_vel # target velocity
-	global tar_delta # target delta
-	global tar_omega # target omega
-	global wheelbase # wheel base for ackerman bot
-	global error_sum 
+	global active_vel
+	global tar_vel
+	global tar_omega
+	global wheelbase
+	global error_sum
 	global error
 	global error_diff
 	global output
@@ -114,64 +94,64 @@ def callback_feedback(data):
 	global pub
 	global prev_error
 	global gear_stat
-	global acc_thershold # threshold for acceleration
-	global brake_threshold # threshold for braking
+	global acc_thershold
+	global brake_threshold
 	global act_velocity
-
-	# conversion from quarternion to euler
-	siny = +2.0 * (data.pose.pose.orientation.w *
-				   data.pose.pose.orientation.z +
-				   data.pose.pose.orientation.x *
-				   data.pose.pose.orientation.y)
-	cosy = +1.0 - 2.0 * (data.pose.pose.orientation.y *
-						 data.pose.pose.orientation.y +
-						 data.pose.pose.orientation.z *
-						 data.pose.pose.orientation.z)
+	global yp
+	global yi
+	global yd
+	
+	siny = 2.0 * (data.pose.pose.orientation.w * data.pose.pose.orientation.z 
+				+ data.pose.pose.orientation.x * data.pose.pose.orientation.y)
+	cosy = 1.0 - 2.0 * (data.pose.pose.orientation.y *
+		data.pose.pose.orientation.y +
+		data.pose.pose.orientation.z *
+		data.pose.pose.orientation.z)
 	yaw = math.atan2(siny, cosy)
 
 	last_recorded_vel = (data.twist.twist.linear.x * math.cos(yaw) +
-						 data.twist.twist.linear.y * math.sin(yaw))
-	# last_recorded_ang = data.twist.twist.angular.z
+		data.twist.twist.linear.y * math.sin(yaw))
 
 	active_vel = last_recorded_vel
-  
+
 	plot = Twist()
 	output = Twist()
-	# PID control applied
+
 	error = tar_vel - active_vel
 	error_sum += error
 	error_diff = error - prev_error
 	prev_error = error
 	if error == 0:
-		print ("e")
 		if tar_vel == 0:
 			output.linear.x = 0
 		else:
 			output.linear.x = output.linear.x - 5
-	# PID maths
+	# updating kp, ki, kd using MIT rule
+	kp = kp + yp * error * error
+	ki = ki + yi * error * error_sum
+	kd = kd + yd * error * error_diff
+
+	rospy.loginfo("kp is : %f",kp)
+	rospy.loginfo("ki is : %f",ki)
+	rospy.loginfo("kd is : %f",kd)
+
+	# PID on velocity with updated parameters
 	if error > 0.01:
-		print ("e1")
 		output.linear.x = (kp * error + ki * error_sum + kd * error_diff)
 	if error < -0.01:
-		print ("e2")
 		output.linear.x = ((kp * error + ki * error_sum + kd * error_diff) -
-						   brake_threshold)
+			brake_threshold)
 
 	plot.linear.x = tar_vel
 	plot.linear.y = active_vel
 	plot.linear.z = tar_vel - active_vel  # error term
-
-	# output.linear.x = 100
-	print output.linear.x
-	# output.linear.x = int(output.linear.x)
-	# thresholding the linear velocity
+	# thresholding the forward velocity
 	if output.linear.x > 100:
 		output.linear.x = 100
 	if output.linear.x < -100:
 		output.linear.x = -100
-	# thresholding the angular steering
-	output.angular.z = min(
-		80, max(-80, convert(tar_vel, tar_omega, wheelbase)))
+	# thresholding the angle
+	output.angular.z = min(30.0, max(-30.0, tar_delta))
 
 	rospy.loginfo("linear velocity : %f",output.linear.y)
 	rospy.loginfo("target linear velocity : %f",output.linear.x)
@@ -181,16 +161,27 @@ def callback_feedback(data):
 
 
 def callback_cmd_vel(data):
-	'''
-	Sets the target velocity and steering angle
-	:params data [Twist]
-	:params tar_vel [float]
-	:params tar_omega [float]
-	'''
+	"""
+	Assigns the value of velocity from topic cmd_vel to tar_vel
+
+	:param tar_vel: (float)
+	:param data: (twist) 
+	"""
 	global tar_vel
-	global tar_omega
-	tar_vel = data.linear.x
-	tar_omega = data.angular.z
+	tar_vel = data.linear.x 
+
+
+
+def callback_delta(data):
+	"""
+	Assigns the value from subscribed topic to the variable tar_delta
+
+	:param tar_delta: (float)
+	:param data: (twist)
+	"""
+	global tar_delta
+	tar_delta = data.angular.z
+
 
 def start():
 	global pub
@@ -200,10 +191,11 @@ def start():
 	pub = rospy.Publisher(ackermann_cmd_topic, Control, queue_size=10)
 	pub1 = rospy.Publisher('plot', Twist, queue_size=10)
 	rospy.Subscriber("cmd_vel", Twist, callback_cmd_vel)
+	rospy.Subscriber("cmd_delta", Twist, callback_delta)
 	rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
+
 	rospy.spin()
 
 
 if __name__ == '__main__':
-		# thread.start_new_thread( tar_update , ())
 	start()

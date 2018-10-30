@@ -18,8 +18,18 @@ from std_msgs.msg import Int64
 # Subscribe topic- base_pose_ground_truth , astroid_path
 
 global steer
-kp = 1  #gain parameter
+kp = 10  #gain parameter
+alpha = 0.5
 wheelbase = 1.983  #in meters
+global n
+global ep_max
+global ep_sum
+global ep_avg
+n=0
+ep_avg = 0
+ep_sum = 0
+ep_max = 0
+
 
 def callback_feedback(data):
     """
@@ -62,6 +72,20 @@ def dist(a, x, y):
     """
     return (((a.pose.position.x - x)**2) + ((a.pose.position.y - y)**2))**0.5
 
+def path_length_distance(a,b):
+    return (((a.pose.position.x - b.pose.position.x)**2) + ((a.pose.position.y - b.pose.position.y)**2))**0.5
+
+def calc_path_length(data):
+    global path_length
+    path_length = []
+
+    for i in range(len(data.poses)):
+        if i == 0:
+            path_length.append(0)
+
+        else:
+            path_length.append(path_length[i-1] + path_length_distance(data.poses[i], data.poses[i-1]))
+
 
 def callback_path(data):
     """
@@ -75,17 +99,31 @@ def callback_path(data):
     """
     global ep
     global cp
+    global bot_theta1
+    global ep_max
+    global ep_sum
+    global ep_avg
+    global n
+    global path_length
 
+    cross_err = Twist()
     x_p = data
+    calc_path_length(x_p)
 
     distances = []
     for i in range(len(x_p.poses)):
         a = x_p.poses[i]
         distances += [dist(a, x, y)]
     ep = min(distances)
+    if (ep > ep_max):
+        ep_max = ep
+
+    n = n + 1
+    ep_sum = ep_sum + ep
+    ep_avg = ep_sum / n
 
     cp = distances.index(ep)
-    print ("cp %f ep %f" % (cp, ep))
+    
     cmd = Twist()
     cross2 = [(x - data.poses[cp].pose.position.x),
               (y - data.poses[cp].pose.position.y)]
@@ -93,6 +131,10 @@ def callback_path(data):
     cross_prod = cross[0] * cross2[1] - cross[1] * cross2[0]
     if (cross_prod > 0):
         ep = -ep
+
+    cross_err.linear.x = ep
+    cross_err.angular.x = ep_max
+    cross_err.angular.y = ep_avg
 
     siny = +2.0 * (x_p.poses[cp].pose.orientation.w *
                    x_p.poses[cp].pose.orientation.z +
@@ -103,21 +145,30 @@ def callback_path(data):
                          x_p.poses[cp].pose.orientation.z *
                          x_p.poses[cp].pose.orientation.z)
 
-    steer_path = math.atan2(siny, cosy)
-    steer_err = (bot_theta - steer_path) * (-1)
-    tan = math.atan(kp * ep / bot_vel)
-    delta = steer_err + tan
+    #steer_path = math.atan2(siny, cosy)
+    
+    steer_path = math.atan2(x_p.poses[i].pose.position.y - x_p.poses[i-1].pose.position.y, x_p.poses[i].pose.position.x - x_p.poses[i-1].pose.position.x )
 
+    bot_theta1 = (bot_theta + math.pi) % math.pi  #converts bot_theta [-pi to pi] to [0 to pi]
+    steer_err = (bot_theta1 - steer_path) * (-1)
+    tan = math.atan(ep / kp)   
+    delta = (alpha*steer_err + tan)
+    #print ("steer err %f bot_theta %f steer_path %f" % (steer_err, bot_theta1, steer_path))
     delta = delta * 180 / 3.14  #converting delta into degrees from radian
+    print delta
     cmd.angular.z = delta
-    pub1.publish(cmd)
+    cross_err.linear.y = steer_err
+    cross_err.linear.z = path_length[cp]
 
+    pub1.publish(cmd)
+    pub2.publish(cross_err)
 
 def start():
     global pub1
     global pub2
     rospy.init_node('path_tracking', anonymous=True)
-    pub1 = rospy.Publisher('cmd_delta', Twist, queue_size=10)
+    pub1 = rospy.Publisher('cmd_delta', Twist, queue_size=100)
+    pub2 = rospy.Publisher('cross_track_error', Twist, queue_size=100)
     rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
     rospy.Subscriber("astroid_path", Path, callback_path)
     rospy.spin()

@@ -63,8 +63,8 @@ def main():
 	has_initialize = True
 	# loop to get the path coordinates
 	for t in frange(-math.pi, -math.pi / 2, resolution):
-		x = radius * math.cos(t) ** 3 + offset_x # add radius offset 
-		y = radius * math.sin(t) ** 3 + offset_y
+		x = radius * math.cos(t) ** 3 + int(offset_x) # add radius offset 
+		y = radius * math.sin(t) ** 3 + int(offset_y)
 		if has_initialize:
 			old_x = x
 			old_y = y

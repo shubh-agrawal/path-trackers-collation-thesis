@@ -19,8 +19,8 @@ from std_msgs.msg import Int64
 
 
 
-kp = 2  #gain parameter
-alpha = 0.5
+kp = 5.0  #gain parameter
+alpha = 0.1
 wheelbase = 1.983  #in meters
 global steer
 global n
@@ -150,16 +150,20 @@ def callback_path(data):
 
     #steer_path = math.atan2(siny, cosy)
     
-    steer_path = math.atan2(x_p.poses[i].pose.position.y - x_p.poses[i-1].pose.position.y, x_p.poses[i].pose.position.x - x_p.poses[i-1].pose.position.x )
+    steer_path = math.atan2(x_p.poses[cp].pose.position.y - x_p.poses[cp-1].pose.position.y, x_p.poses[cp].pose.position.x - x_p.poses[cp-1].pose.position.x )
 
 
-    bot_theta1 = (bot_theta + math.pi) % math.pi  #converts bot_theta [-pi to pi] to [0 to pi]
-    steer_err = (bot_theta1 - steer_path) * (-1)
+    # bot_theta1 = (bot_theta + math.pi) % math.pi  #converts bot_theta [-pi to pi] to [0 to pi]
+    steer_err = (bot_theta - steer_path) * (-1)
+    # print "steer_error : ", steer_err, "\n"
     tan = math.atan(ep / kp)   
-    delta = (alpha*steer_err + tan)
+    # print "extra steer : ", tan, "\n"
+
+    delta = (steer_err + tan)
     #print ("steer err %f bot_theta %f steer_path %f" % (steer_err, bot_theta1, steer_path))
 
     delta = delta * 180 / 3.14  #converting delta into degrees from radian
+    delta = min(30,max(-30,delta))
     print delta
     cmd.angular.z = delta
     cross_err.linear.y = steer_err

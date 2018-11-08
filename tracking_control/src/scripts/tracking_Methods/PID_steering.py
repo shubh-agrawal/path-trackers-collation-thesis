@@ -136,7 +136,8 @@ def callback_path(data):
 						 path_data.poses[index].pose.orientation.y +
 						 path_data.poses[index].pose.orientation.z *
 						 path_data.poses[index].pose.orientation.z)
-	path_yaw = math.atan2(siny,cosy)
+	# path_yaw = math.atan2(siny,cosy)
+	path_yaw = math.atan2(path_data.poses[index].pose.position.y - path_data.poses[index-1].pose.position.y, path_data.poses[index].pose.position.x - path_data.poses[index-1].pose.position.x )
 
 	steering_correction = (path_yaw - bot_yaw) * (180 / math.pi)
 	# PID controlled steering angle calculation

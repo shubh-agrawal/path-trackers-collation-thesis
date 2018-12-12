@@ -18,7 +18,7 @@ global n
 global ep_max
 global ep_sum
 global ep_avg
-
+global path_data
 wheelbase = 1.983 
 kp = 0.1 		#proportional constant
 ki = 0.001		#integral constant
@@ -31,7 +31,11 @@ ep_max = 0
 
 def callback_feedback(data):
 	"""
-	Gets the value of bot position and yaw
+	Gets the value of bot position and yaw,
+	calculates crosstrack error and gives the pid controlled steering angle.
+	:param cross_track_err: crosstrack error
+	:param delta : steering angle 
+	:param steering correction : difference of path tangent and bot yaw
 	:param x_bot : current x coordinate of bot 
 	:param y_bot : current y coordinate of bot
 	:param: bot_yaw : current yaw of bot
@@ -39,6 +43,7 @@ def callback_feedback(data):
 	global x_bot
 	global y_bot
 	global bot_yaw
+	global path_data
 
 	x_bot = data.pose.pose.position.x
 	y_bot = data.pose.pose.position.y
@@ -53,37 +58,6 @@ def callback_feedback(data):
 						data.pose.pose.orientation.z)
 	bot_yaw = math.atan2(siny, cosy)
 
-def dist(a,x,y):
-	"""
-	function to calculate distance
-	"""
-	return (((a.pose.position.x - x)**2) + ((a.pose.position.y - y)**2))**0.5
-
-def path_length_distance(a,b):
-	return (((a.pose.position.x - b.pose.position.x)**2) + ((a.pose.position.y - b.pose.position.y)**2))**0.5
-
-def calc_path_length(data):
-	global path_length
-	path_length = []
-
-	for i in range(len(data.poses)):
-		if i == 0:
-			path_length.append(0)
-		else:
-			path_length.append(path_length[i-1] + path_length_distance(data.poses[i], data.poses[i-1]))
-
-
-def callback_path(data):
-	"""
-	function to calculate crosstrack error and give the pid controlled steering angle.
-	:param cross_track_err crosstrack error
-	:param delta : steering angle 
-	:param steering correction : difference of path tangent and bot yaw  
-	"""
-	
-	global x_bot
-	global y_bot
-	global bot_yaw
 	global cross_track_err
 	global ep_max
 	global ep_sum
@@ -98,8 +72,9 @@ def callback_path(data):
 	delta = Twist()
 	cross_err = Twist()
 
-	path_data = data
+	# path_data = data
 	calc_path_length(path_data)
+	data1=path_data
 
 	distances = []
 	for i in range(len(path_data.poses)):
@@ -115,7 +90,7 @@ def callback_path(data):
 	ep_avg = ep_sum / n
 
 	# deciding the sign of crosstrack error
-	orientation_vec = [(x_bot - data.poses[index].pose.position.x), (y_bot - data.poses[index].pose.position.y)]
+	orientation_vec = [(x_bot - data1.poses[index].pose.position.x), (y_bot - data1.poses[index].pose.position.y)]
 	heading_vec = [math.cos(bot_yaw), math.sin(bot_yaw)]
 	cross_prod = heading_vec[0] * orientation_vec[1] - heading_vec[1] * orientation_vec[0]
 
@@ -136,10 +111,12 @@ def callback_path(data):
 						 path_data.poses[index].pose.orientation.y +
 						 path_data.poses[index].pose.orientation.z *
 						 path_data.poses[index].pose.orientation.z)
-	# path_yaw = math.atan2(siny,cosy)
+
 	path_yaw = math.atan2(path_data.poses[index].pose.position.y - path_data.poses[index-1].pose.position.y, path_data.poses[index].pose.position.x - path_data.poses[index-1].pose.position.x )
 
 	steering_correction = (path_yaw - bot_yaw) * (180 / math.pi)
+	# print ("steering_correction = ", steering_correction)
+	
 	# PID controlled steering angle calculation
 	diff_cte = cross_track_err - prev_cte
 	sum_cte += cross_track_err
@@ -152,31 +129,54 @@ def callback_path(data):
 	pub.publish(delta)
 	pub2.publish(cross_err)
 
+def dist(a,x,y):
+	"""
+	function to calculate distance
+	"""
+	return (((a.pose.position.x - x)**2) + ((a.pose.position.y - y)**2))**0.5
+
+def path_length_distance(a,b):
+	return (((a.pose.position.x - b.pose.position.x)**2) + ((a.pose.position.y - b.pose.position.y)**2))**0.5
+
+def calc_path_length(data):
+	global path_length
+	global path_data
+	path_length = []
+
+	for i in range(len(data.poses)):
+		if i == 0:
+			path_length.append(0)
+		else:
+			path_length.append(path_length[i-1] + path_length_distance(data.poses[i], data.poses[i-1]))
+
+
+def callback_path(data):
+	
+	global x_bot
+	global y_bot
+	global bot_yaw
+	global cross_track_err
+	global ep_max
+	global ep_sum
+	global ep_avg
+	global n
+	global cp1
+	global path_length
+	global path_data
+
+	path_data = data
+
 
 def start():
 
 	global pub
 	global pub2
 	rospy.init_node("PID_steering", anonymous = True)
-	pub = rospy.Publisher("cmd_delta", Twist, queue_size = 100)
 	pub2 = rospy.Publisher('cross_track_error', Twist, queue_size=100)
-	rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
+	pub = rospy.Publisher("cmd_delta", Twist, queue_size = 100)
 	rospy.Subscriber("astroid_path", Path, callback_path)
+	rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
 	rospy.spin()
 
 if __name__ == '__main__':
 	start()
-
-
-
-
-
-
-
-
-
-
-
-
-
-

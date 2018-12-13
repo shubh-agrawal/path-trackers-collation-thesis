@@ -40,16 +40,29 @@ ep_max = 0
 
 def callback_feedback(data):
 	'''
-	Assigns the position of the robot to global variables from odometry.
+	Assigns the position of the robot to global variables from odometry and
+	calculates target path point and the steering angle
 	:param x_bot [float]
 	:param y_bot [float]
 	:param yaw [float]
 	:param vel [float]
+	:param data [Path]
+	:param ep [float]
+	:param cp [int]
 	'''
 	global x_bot
 	global y_bot
 	global yaw
 	global vel
+	global ep # min distance
+	global cp # index of closest point
+	global ep_max
+	global ep_sum
+	global ep_avg
+	global n
+	global cp1
+	global path_length
+	global x_p
 
 	x_bot = data.pose.pose.position.x
 	y_bot = data.pose.pose.position.y
@@ -63,8 +76,7 @@ def callback_feedback(data):
 						 data.pose.pose.orientation.z *
 						 data.pose.pose.orientation.z)
 	yaw = math.atan2(siny, cosy) # yaw in radians
-	# vel = data.twist.twist.linear.x * math.cos(yaw)
-	# + data.twist.twist.linear.y * math.sin(yaw)
+
 	# printing the odometry readings
 	print 'x of car:', x_bot
 	print 'y of car:', y_bot
@@ -74,51 +86,9 @@ def callback_feedback(data):
 	data.twist.twist.linear.z
 	print 'c'
 
-def dist(a, x, y):
-	'''
-	Calculates distance between two points.
-	:param a [float]
-	:param x [float]
-	:param y [float]
-	'''
-	# calculate distance
-	return (((a.pose.position.x - x)**2) + ((a.pose.position.y - y)**2))**0.5
-
-def path_length_distance(a,b):
-	return (((a.pose.position.x - b.pose.position.x)**2) + ((a.pose.position.y - b.pose.position.y)**2))**0.5
-
-def calc_path_length(data):
-	global path_length
-	path_length = []
-
-	for i in range(len(data.poses)):
-		if i == 0:
-			path_length.append(0)
-
-		else:
-			path_length.append(path_length[i-1] + path_length_distance(data.poses[i], data.poses[i-1]))
-
-
-def callback_path(data):
-	'''
-	calculates target path point and the steering angle
-	:param data [Path]
-	:param ep [float]
-	:param cp [int]
-	'''
-	global ep # min distance
-	global cp # index of closest point
-	global ep_max
-	global ep_sum
-	global ep_avg
-	global n
-	global cp1
-	global path_length
-
 	cross_err = Twist()
-	x_p = data
-	#calculate minimum distance 
 	calc_path_length(x_p)
+	data1 = x_p
 
 	distances = []
 	for i in range(len(x_p.poses)):
@@ -137,8 +107,8 @@ def callback_path(data):
 
 	cp = distances.index(ep)
 	cp1 = cp
-	cross2 = [(x_bot - data.poses[cp1].pose.position.x),
-			  (y_bot - data.poses[cp1].pose.position.y)]
+	cross2 = [(x_bot - data1.poses[cp1].pose.position.x),
+			  (y_bot - data1.poses[cp1].pose.position.y)]
 	cross = [math.cos(yaw), math.sin(yaw)]
 	cross_prod = cross[0] * cross2[1] - cross[1] * cross2[0]
 	if (cross_prod > 0):
@@ -160,10 +130,10 @@ def callback_path(data):
 	Lf = k * max_vel + d_lookahead
 
 	while Lf > L and (cp + 1) < len(x_p.poses):
-		dx = data.poses[cp + 1].pose.position.x - \
-			data.poses[cp].pose.position.x
-		dy = data.poses[cp + 1].pose.position.y - \
-			data.poses[cp].pose.position.y
+		dx = data1.poses[cp + 1].pose.position.x - \
+			data1.poses[cp].pose.position.x
+		dy = data1.poses[cp + 1].pose.position.y - \
+			data1.poses[cp].pose.position.y
 		L += math.sqrt(dx ** 2 + dy ** 2)
 		cp = cp + 1
 	print len(x_p.poses)
@@ -197,16 +167,53 @@ def callback_path(data):
 	print 'omega:', cmd.angular.z
 	cross_err.linear.z = path_length[cp]
 
-	#r = rospy.Rate(100)
-	# while not rospy.is_shutdown():
 	pub1.publish(cmd)
 	pub2.publish(cross_err)
-	#	r.sleep()
 	
 	print "cmd published"
 
 	# print (ep)
 	print x_p.poses[cp].pose.orientation
+
+
+def dist(a, x, y):
+	'''
+	Calculates distance between two points.
+	:param a [float]
+	:param x [float]
+	:param y [float]
+	'''
+	# calculate distance
+	return (((a.pose.position.x - x)**2) + ((a.pose.position.y - y)**2))**0.5
+
+def path_length_distance(a,b):
+	return (((a.pose.position.x - b.pose.position.x)**2) + ((a.pose.position.y - b.pose.position.y)**2))**0.5
+
+def calc_path_length(data):
+	global path_length
+	path_length = []
+
+	for i in range(len(data.poses)):
+		if i == 0:
+			path_length.append(0)
+
+		else:
+			path_length.append(path_length[i-1] + path_length_distance(data.poses[i], data.poses[i-1]))
+
+
+def callback_path(data):
+
+	global ep # min distance
+	global cp # index of closest point
+	global ep_max
+	global ep_sum
+	global ep_avg
+	global n
+	global cp1
+	global path_length
+	global x_p
+
+	x_p = data
 
 
 def pure_pursuit(goal_point):
@@ -236,9 +243,8 @@ def start():
 	rospy.init_node('path_tracking', anonymous=True)
 	pub2 = rospy.Publisher('cross_track_error', Twist, queue_size=100)
 	pub1 = rospy.Publisher('cmd_delta', Twist, queue_size=100)
-	rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
 	rospy.Subscriber("astroid_path", Path, callback_path)
-
+	rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
 	rospy.spin()
 
 

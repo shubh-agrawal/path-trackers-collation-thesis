@@ -59,7 +59,7 @@ def main():
 	holonomic = rospy.get_param('~holonomic', False)
 	offset_x = rospy.get_param('~offset_x', x_offset) # get x offset from params
 	offset_y = rospy.get_param('~offset_y', y_offset) # get y offset from params
-	update_rate = rospy.get_param('~update_rate', 10) # rate of path publishing
+	update_rate = rospy.get_param('~update_rate', 100) # rate of path publishing
 	has_initialize = True
 	# loop to get the path coordinates
 	for t in frange(-math.pi, -math.pi / 2, resolution):

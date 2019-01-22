@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  prius_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -197,3 +198,11 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+add_compile_options(-std=c++11)
+
+add_library(MPC src/scripts/tracking_Methods/MPC.cpp)
+
+add_executable(main0 src/scripts/tracking_Methods/main0.cpp)
+target_link_libraries(main0 MPC ipopt ${catkin_LIBRARIES})
+#target_link_libraries(main0 MPC)
+add_dependencies(main0 tracking_control_generate_messages_cpp)

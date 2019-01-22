@@ -15,7 +15,7 @@ from std_msgs.msg import Int64
 import rospy, math
 import numpy as np
 import scipy.linalg as la
-#import control
+from prius_msgs.msg import Control
 
 class State:
 
@@ -35,16 +35,48 @@ LQR parameters
 Q matrix penalises the error input state x
 R matrix penalises the  
 '''
-Q = 100*np.eye(4)
+Q = 10*np.eye(5)
 Q[1, 1] = 0
-Q[2, 2] = 0
+# Q[2, 2] = 10
 Q[3, 3] = 0
-R = np.matrix([[1]])
+Q[4, 4] = 100
+R = 100*np.eye(2)
+R[1,1] = 300
 
 # Other parameters
 dt = 0.01                         # time tick[s]
 L = 1.983                         # Wheel base of the vehicle [m]
-max_steer = 30.0                  # maximum steering angle[degrees]
+max_steer = 30.0 
+global tar_vel                 # maximum steering angle[degrees]
+
+def callback_vel(data):
+    global tar_vel
+    tar_vel = data.linear.x
+
+def prius_pub(data):
+    '''
+    publishes the velocity and steering angle
+    published on topic : ackermann_cmd_topic
+    '''
+    global prius_vel
+    prius_vel = Control()
+
+    if(data.linear.x > 0):
+        prius_vel.throttle = data.linear.x 
+        prius_vel.brake = 0
+        print ("acc")
+        print (prius_vel.throttle)
+
+    if(data.linear.x < 0):
+        prius_vel.brake = -data.linear.x 
+        prius_vel.throttle = 0
+        print ("brake")
+        print (prius_vel.brake)
+
+    prius_vel.steer = data.angular.z / 30
+    #print "steering:", prius_vel.steer
+
+    pub_vel.publish(prius_vel)
 
 def callback_feedback(data):
     '''
@@ -80,6 +112,7 @@ def callback_feedback(data):
     
     state.v = (data.twist.twist.linear.x * math.cos(state.yaw) +
                 data.twist.twist.linear.y * math.sin(state.yaw))
+    print "velocity of bot:", state.v, "\n"
 
     if len(x_p.poses) > 0:
         ind, e = calc_nearest_index(state, x_p)
@@ -98,10 +131,12 @@ def callback_feedback(data):
         e_th = pi_2_pi(state.yaw - path_angle)
 
         
-        delta_lqr  = lqr_steering_control(state, e, e_th, pe, pe_th, x_p) 
+        delta_lqr, vel_throttle  = lqr_steering_control(state, e, e_th, pe, pe_th, x_p) 
         cmd_steer = Twist()
-        cmd_steer.angular.z = delta_lqr*180.0/math.pi 
-        pub.publish(cmd_steer)
+        cmd_steer.linear.x = max(-1, min(1, vel_throttle))
+        cmd_steer.angular.z = max(-30, min(30, delta_lqr*180.0/math.pi))
+        # pub.publish(cmd_steer)
+        prius_pub(cmd_steer)
         print ("Steering angle(degrees) %f " % (cmd_steer.angular.z))
         pe = e
         pe_th = e_th
@@ -157,8 +192,8 @@ def lqr_steering_control(state, e, e_th, pe, pe_th, x_p):
     '''
     v = state.v
 
-    A = np.matrix(np.zeros((4,4)))
-    B = np.matrix(np.zeros((4, 1)))
+    A = np.matrix(np.zeros((5, 5)))
+    B = np.matrix(np.zeros((5, 2)))
 
     '''
     Simple Kinematic Model
@@ -180,24 +215,26 @@ def lqr_steering_control(state, e, e_th, pe, pe_th, x_p):
     A[1,3] = 0.0034
     A[2,2] = 1.0
     A[2,3] = 0.0963
+    A[4,4] = 1
 
     B[0,0] = 0.050025784700646
     B[1,0] = 0.539884777742374 
     B[2,0] = 0.041458048416231
     B[3,0] = 0.429184549356149
-
+    B[4,1] = dt
     K, _, _ = dlqr(A, B, Q, R)
 
     #State matrix x
-    x = np.matrix(np.zeros((4, 1)))
+    x = np.matrix(np.zeros((5, 1)))
 
     x[0, 0] = -e
     x[1, 0] = -(e - pe) / dt
     x[2, 0] = e_th
     x[3, 0] = (e_th - pe_th) / dt
-
+    x[4, 0] = -(tar_vel - state.v)
     #Linear Output
     u = -K * x   
+
 
     #calc steering input    
     fb =u[0, 0]
@@ -207,8 +244,9 @@ def lqr_steering_control(state, e, e_th, pe, pe_th, x_p):
     #ff = math.atan2(L * k, 1)
 
     delta = ff + fb
-
-    return delta
+    print "throttle:", u[1,0], "\n"
+    vel_throttle = u[1,0]
+    return delta, vel_throttle
 
 def calc_nearest_index(state, x_p):
     '''
@@ -225,12 +263,15 @@ def calc_nearest_index(state, x_p):
 
 def main():
     global pub
-
+    global pub_vel
     print("LQR steering control tracking start!!")
     rospy.init_node('path_tracking_lqr',anonymous = True)
+    ackermann_cmd_topic = rospy.get_param('~ackermann_cmd_topic', '/prius')
+    pub_vel = rospy.Publisher(ackermann_cmd_topic, Control, queue_size=10)
+    rospy.Subscriber('cmd_vel', Twist, callback_vel, queue_size=1)
     rospy.Subscriber("base_pose_ground_truth",Odometry, callback_feedback, queue_size=1)
     rospy.Subscriber("astroid_path",Path, callback_path, queue_size=1)
-    pub = rospy.Publisher("cmd_delta", Twist, queue_size=1)
+    # pub = rospy.Publisher("cmd_delta", Twist, queue_size=1)
 
     rospy.spin()
 

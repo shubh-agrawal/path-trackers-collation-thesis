@@ -1,0 +1,13 @@
+	<launch>
+
+	<node pkg="tf" type="static_transform_publisher" name="bl_bf" args="0 0 -0.18 0 0 0 base_link base_footprint 10" />
+	<node pkg="tf" type="static_transform_publisher" name="bl_lidar" args="1.973 0 0.211 0 0 0	 base_link laser 10" />
+	<node pkg="tf" type="static_transform_publisher" name="bl_gps" args="0.46 0 1.326 0 0 0 base_link gps_link 10" />
+	<node pkg="tf" type="static_transform_publisher" name="bl_front_link" args="1.192 0 0 0 0 0 base_link front_axel_link 10" />
+	<node pkg="tf" type="static_transform_publisher" name="bl_rear_link" args="-0.766 0 0 0 0 0 base_link rear_axel_link 10" />
+	<node pkg="tf" type="static_transform_publisher" name="bl_imu" args="-0.081 0 0.427 0 0 0 base_link imu 10" />
+	<node pkg="tf" type="static_transform_publisher" name="gl_g" args="0 0 0 0 0 0 gps_link gps 10" />
+
+</launch>
+
+

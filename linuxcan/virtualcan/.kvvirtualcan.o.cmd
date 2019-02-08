@@ -1,0 +1,1 @@
+cmd_/home/agv/path_tracking_ws/linuxcan/virtualcan/kvvirtualcan.o := ld -m elf_x86_64 -z max-page-size=0x200000   -r -o /home/agv/path_tracking_ws/linuxcan/virtualcan/kvvirtualcan.o /home/agv/path_tracking_ws/linuxcan/virtualcan/virtualcan.o 

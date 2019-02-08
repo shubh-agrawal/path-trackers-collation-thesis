@@ -1,0 +1,3 @@
+/home/agv/path_tracking_ws/linuxcan/pciefd/kvpciefd.ko
+/home/agv/path_tracking_ws/linuxcan/pciefd/pciefd_hwif.o /home/agv/path_tracking_ws/linuxcan/pciefd/altera/HAL/src/pciefd.o /home/agv/path_tracking_ws/linuxcan/pciefd/altera/HAL/src/pciefd_packet.o /home/agv/path_tracking_ws/linuxcan/pciefd/altera/HAL/src/pciefd_rx_fifo.o /home/agv/path_tracking_ws/linuxcan/pciefd/altera/HAL/src/altera_avalon_epcs_flash_controller.o /home/agv/path_tracking_ws/linuxcan/pciefd/altera/HAL/src/altera_avalon_spi.o /home/agv/path_tracking_ws/linuxcan/pciefd/altera/HAL/src/epcs_commands.o /home/agv/path_tracking_ws/linuxcan/pciefd/altera/HAL/src/pwm_util.o
+

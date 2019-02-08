@@ -1,0 +1,1 @@
+cmd_/home/agv/path_tracking_ws/linuxcan/pcican2/kvpcicanII.ko := ld -r -m elf_x86_64 -z max-page-size=0x200000 -T ./scripts/module-common.lds --build-id  -o /home/agv/path_tracking_ws/linuxcan/pcican2/kvpcicanII.ko /home/agv/path_tracking_ws/linuxcan/pcican2/kvpcicanII.o /home/agv/path_tracking_ws/linuxcan/pcican2/kvpcicanII.mod.o ;  true

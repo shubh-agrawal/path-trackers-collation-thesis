@@ -1,0 +1,1 @@
+cmd_/home/agv/path_tracking_ws/linuxcan/common/kvcommon.ko := ld -r -m elf_x86_64 -z max-page-size=0x200000 -T ./scripts/module-common.lds --build-id  -o /home/agv/path_tracking_ws/linuxcan/common/kvcommon.ko /home/agv/path_tracking_ws/linuxcan/common/kvcommon.o /home/agv/path_tracking_ws/linuxcan/common/kvcommon.mod.o ;  true

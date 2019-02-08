@@ -1,0 +1,1 @@
+cmd_/home/agv/path_tracking_ws/linuxcan/pciefd/kvpciefd.ko := ld -r -m elf_x86_64 -z max-page-size=0x200000 -T ./scripts/module-common.lds --build-id  -o /home/agv/path_tracking_ws/linuxcan/pciefd/kvpciefd.ko /home/agv/path_tracking_ws/linuxcan/pciefd/kvpciefd.o /home/agv/path_tracking_ws/linuxcan/pciefd/kvpciefd.mod.o ;  true

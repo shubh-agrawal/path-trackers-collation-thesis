@@ -1,0 +1,49 @@
+# ~/.tmuxinator/mahindra_path_tracking.yml
+
+name: mahindra_path_tracking
+root: ~/car_ws/src/path_tracking_ws/src/
+
+# Optional tmux socket
+# socket_name: foo
+
+# Runs before everything. Use it to start daemons etc.
+# pre: sudo /etc/rc.d/mysqld start
+
+# Runs in each window and pane before window/pane specific commands. Useful for setting up interpreter versions.
+# pre_window: cd ~/car_ws/src/path_tracking_ws/src/
+
+# Pass command line options to tmux. Useful for specifying a different tmux.conf.
+# tmux_options: -f ~/.tmux.mac.conf
+
+# Change the command to call tmux.  This can be used by derivatives/wrappers like byobu.
+# tmux_command: byobu
+
+# Specifies (by name or index) which window will be selected on project startup. If not set, the first window is used.
+# startup_window: logs
+
+# Controls whether the tmux session should be attached to automatically. Defaults to true.
+# attach: false
+
+# Runs after everything. Use it to attach to tmux with custom options etc.
+# post: tmux -CC attach -t mahindra_path_tracking
+
+windows:
+  - controls:
+      layout: tiled
+      panes:
+        - sudo chmod 777 /dev/tty*;roslaunch vn_ins module.launch
+        - sleep 2;roslaunch robot_localization final2.launch
+        - sleep 4;roslaunch tf_mahindra mahindra_tf.launch
+        - #empty
+  - path_tracking:
+      layout: tiled
+      panes:
+        - sleep 6;python Path-Tracking-Simulation/test_paths/circular_path.py
+        - sleep 10;python Path-Tracking-Simulation/tracking_control/src/scripts/tracking_Methods/pure_pursuit.py
+        - sleep 12;python Path-Tracking-Simulation/tracking_control/src/scripts/controllers/PID_velocity_controller.py
+        - sleep 14;rviz
+        - #empty
+        - #empty
+
+
+      

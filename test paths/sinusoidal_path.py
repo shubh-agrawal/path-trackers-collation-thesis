@@ -9,6 +9,8 @@ import rospy
 import tf
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
+from tf.transformations import quaternion_from_euler
+import numpy as np
 
 import math
 
@@ -39,6 +41,12 @@ def set_params(x_offset, y_offset):
 
 	return x_offset, y_offset
 
+def get_quaternion_matrix(data):
+	mat = np.array([[(1 - 2*data[1]**2 - 2*data[2]**2), 2*(data[0]*data[1] - data[3]*data[2]), 2*(data[0]*data[2] + data[1] * data[3])], 
+					[2*(data[0] * data[1] + data[2] * data[3]), (1 - 2*data[0]**2 - 2*data[2]**2), 2*(data[1] * data[2] - data[0] * data[3])], 
+					[2*(data[0] * data[2] - data[1]*data[3]), 2*(data[1] * data[2] + data[0] * data[3]), (1 - 2*data[1]**2 - 2*data[0]**2)]])
+
+	return mat
 
 def main():
 	'''
@@ -46,12 +54,13 @@ def main():
 
 	'''
 	x_offset = 100
-	y_offset = 280
+	y_offset = 375
 	x_offset, y_offset = set_params(x_offset,y_offset)
 	rospy.init_node('astroid_curve_publisher')
 	
 	path_pub = rospy.Publisher('astroid_path', Path, queue_size=100)
 	path = Path()
+	quat = quaternion_from_euler(0, 0, -0.785398)
 
 	path.header.frame_id = rospy.get_param('~output_frame', 'map')
 	radius = rospy.get_param('~radius', 50.0) # radius of path
@@ -63,20 +72,22 @@ def main():
 	has_initialize = True
 	# loop to get the path coordinates
 	for t in frange(0, math.pi * 2, resolution):
-		x = 25 * t + int(offset_x)
-		y = 25 * math.sin(t) + int(offset_y)
+		x = 25 * t 
+		y = 25 * math.sin(t) 
 		if has_initialize:
 			old_x = x
 			old_y = y
 			has_initialize = False
 
-		pose = PoseStamped()
-		pose.pose.position.x = x
-		pose.pose.position.y = y
+		init_vector = np.array([x, y, 0])
+		init_vector.resize(3, 1)
+		rot_vector = np.dot(get_quaternion_matrix(quat), init_vector) 
 
 		pose = PoseStamped()
-		pose.pose.position.x = x
-		pose.pose.position.y = y
+		pose.pose.position.x = rot_vector[0] + int(offset_x)
+		pose.pose.position.y = rot_vector[1] + int(offset_y)
+
+		
 		
 		yaw = 0.0
 		if holonomic:

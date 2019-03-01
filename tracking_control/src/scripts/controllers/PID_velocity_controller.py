@@ -105,8 +105,7 @@ def callback_feedback(data):
 						 data.pose.pose.orientation.z)
 	yaw = math.atan2(siny, cosy)
 
-	last_recorded_vel = (data.twist.twist.linear.x * math.cos(yaw) +
-						 data.twist.twist.linear.y * math.sin(yaw))
+	last_recorded_vel = data.twist.twist.linear.x * cosy + data.twist.twist.linear.y * siny
 	
 
 	active_vel = last_recorded_vel

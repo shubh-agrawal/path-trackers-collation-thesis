@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
-path.py
-This code publishes a static parabolic path(sharp turn) in the form of an array for the bot to follow.
+straight_path.py
+This code publishes a static straight path in the form of an array for the bot to follow.
 Used for path tracking with controller code
 Authors : Adarsh Patnaik
 '''
@@ -45,26 +45,26 @@ def main():
 	gets path coordinates and publishes them in form of an array.
 
 	'''
-	x_offset = 155
-	y_offset = 280
+	x_offset = 100
+	y_offset = -3+375
 	x_offset, y_offset = set_params(x_offset,y_offset)
 	rospy.init_node('astroid_curve_publisher')
 	
-	path_pub = rospy.Publisher('astroid_path', Path, queue_size=10)
+	path_pub = rospy.Publisher('astroid_path', Path, queue_size=100)
 	path = Path()
 
 	path.header.frame_id = rospy.get_param('~output_frame', 'map')
 	radius = rospy.get_param('~radius', 50.0) # radius of path
-	resolution = rospy.get_param('~resolution', 0.01) # constant jump value for parameter
+	resolution = rospy.get_param('~resolution', 0.05) # constant jump value for parameter
 	holonomic = rospy.get_param('~holonomic', False)
 	offset_x = rospy.get_param('~offset_x', x_offset) # get x offset from params
 	offset_y = rospy.get_param('~offset_y', y_offset) # get y offset from params
 	update_rate = rospy.get_param('~update_rate', 100) # rate of path publishing
 	has_initialize = True
 	# loop to get the path coordinates
-	for t in frange(0, 12, resolution):
-		x = offset_x + t
-		y = offset_y + (12 * t - t**2) * 0.3
+	for t in frange(0, 200, resolution):
+		x = int(offset_x) + t# some offset can be used to ensure according to test conditions
+		y = int(offset_y) 
 		if has_initialize:
 			old_x = x
 			old_y = y

@@ -3,9 +3,7 @@
 This is the implementation of pure pursuit controller for path tracking
 Link to reference paper: https://www.ri.cmu.edu/pub_files/2009/2
 /Automatic_Steering_Methods_for_Autonomous_Automobile_Path_Tracking.pdf
-
 Authors: Adarsh Patnaik, Anand Jhunjhunwala
-
 '''
 
 import rospy
@@ -22,7 +20,7 @@ from prius_msgs.msg import Control
 
 max_vel = 6.0 # maximum linear velocity
 global steer
-k = 1.0 # constant for relating look ahead distance and velocity
+k = 1.2 # constant for relating look ahead distance and velocity
 wheelbase = 1.983 # wheel base for the vehicle
 d_lookahead = 0.1 # look ahead distance to calculate target point on path
 global n
@@ -77,15 +75,8 @@ def callback_feedback(data):
 						 data.pose.pose.orientation.z)
 	yaw = math.atan2(siny, cosy) # yaw in radians
 
-	# printing the odometry readings
-	print 'x of car:', x_bot
-	print 'y of car:', y_bot
-	print 'angle of car:', yaw
-	print 'vel of car:', data.twist.twist.linear.x,
-	data.twist.twist.linear.y,
-	data.twist.twist.linear.z
-	print 'c'
-
+	
+	vel = data.twist.twist.linear.x * cosy + data.twist.twist.linear.y * siny
 	cross_err = Twist()
 	calc_path_length(x_p)
 	data1 = x_p
@@ -127,7 +118,7 @@ def callback_feedback(data):
 	cmd1 = Twist()
 	prius_vel = Control()
 	L = 0
-	Lf = k * max_vel + d_lookahead
+	Lf = k * vel + d_lookahead
 
 	while Lf > L and (cp + 1) < len(x_p.poses):
 		dx = data1.poses[cp + 1].pose.position.x - \
@@ -222,6 +213,7 @@ def pure_pursuit(goal_point):
 	:params goal_point [float,float] goal point coordinates
 	:params Delta [float] steering angle in radians 
 	'''
+	global tar_vel
 	tx = goal_point[0]
 	ty = goal_point[1]
 	print 'yaw:', yaw
@@ -230,11 +222,19 @@ def pure_pursuit(goal_point):
 	# measuring heading angle 
 	alpha = math.atan2(ty - y_bot, tx - x_bot) - yaw
 	print 'alpha:', alpha
-	Lf = k * max_vel + d_lookahead
+
+	vel1 = max(vel,tar_vel)
+	Lf = k * vel1 + d_lookahead
 	# measuring the steering angle using pure pursuit controller
 	Delta = math.atan2(2.0 * wheelbase * math.sin(alpha) / Lf, 1)
 	print 'Delta:', Delta
 	return Delta
+
+
+def callback_vel(data):
+	global tar_vel
+	tar_vel = data.linear.x
+
 
 
 def start():
@@ -243,6 +243,7 @@ def start():
 	rospy.init_node('path_tracking', anonymous=True)
 	pub2 = rospy.Publisher('cross_track_error', Twist, queue_size=100)
 	pub1 = rospy.Publisher('cmd_delta', Twist, queue_size=100)
+	rospy.Subscriber("/cmd_vel", Twist, callback_vel)
 	rospy.Subscriber("astroid_path", Path, callback_path)
 	rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
 	rospy.spin()

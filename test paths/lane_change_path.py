@@ -12,6 +12,8 @@ from geometry_msgs.msg import PoseStamped
 
 import math
 
+e = 2.7182818284
+
 def frange(x, y, jump):
 	'''
 	finds the set of points for path generation using fixed jump parameters.
@@ -45,8 +47,8 @@ def main():
 	gets path coordinates and publishes them in form of an array.
 
 	'''
-	x_offset = 270
-	y_offset = 180
+	x_offset = 100
+	y_offset = 374	
 	x_offset, y_offset = set_params(x_offset,y_offset)
 	rospy.init_node('astroid_curve_publisher')
 	
@@ -62,9 +64,9 @@ def main():
 	update_rate = rospy.get_param('~update_rate', 100) # rate of path publishing
 	has_initialize = True
 	# loop to get the path coordinates
-	for t in frange(-math.pi, math.pi, resolution):
-		y = offset_x + t + math.pi
-		x = offset_y + math.tan(0.5 * t) + 10 
+	for t in frange(0, 60, resolution):
+		x = float(offset_x) + t 
+		y = float(offset_y) + 4 * ((e**(0.4 * t)) / (100000 + (e**(0.4 * t)))) 
 		if has_initialize:
 			old_x = x
 			old_y = y

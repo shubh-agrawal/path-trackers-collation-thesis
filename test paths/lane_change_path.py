@@ -48,7 +48,7 @@ def main():
 
 	'''
 	x_offset = 100
-	y_offset = 374	
+	y_offset = 375	
 	x_offset, y_offset = set_params(x_offset,y_offset)
 	rospy.init_node('astroid_curve_publisher')
 	
@@ -64,7 +64,7 @@ def main():
 	update_rate = rospy.get_param('~update_rate', 100) # rate of path publishing
 	has_initialize = True
 	# loop to get the path coordinates
-	for t in frange(0, 60, resolution):
+	for t in frange(0, 90, resolution):
 		x = float(offset_x) + t 
 		y = float(offset_y) + 4 * ((math.exp(0.4 * t)) / (100000 + (math.exp(0.4 * t)))) 
 		if has_initialize:

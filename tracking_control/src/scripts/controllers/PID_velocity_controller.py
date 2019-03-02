@@ -182,8 +182,8 @@ def start():
 	global pub1
 	ackermann_cmd_topic = rospy.get_param('~ackermann_cmd_topic', '/prius')
 	rospy.init_node('controls', anonymous=True)
-	pub = rospy.Publisher(ackermann_cmd_topic, Control, queue_size=10)
-	pub1 = rospy.Publisher('plot', Twist, queue_size=10)
+	pub = rospy.Publisher(ackermann_cmd_topic, Control, queue_size=5)
+	pub1 = rospy.Publisher('plot', Twist, queue_size=5)
 	rospy.Subscriber("cmd_vel", Twist, callback_cmd_vel)
 	rospy.Subscriber("cmd_delta", Twist, callback_delta)
 	rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)

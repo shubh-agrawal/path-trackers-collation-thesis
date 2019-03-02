@@ -20,7 +20,7 @@ from prius_msgs.msg import Control
 
 max_vel = 6.0 # maximum linear velocity
 global steer
-k = 1.2 # constant for relating look ahead distance and velocity
+k = 2.5 # constant for relating look ahead distance and velocity
 wheelbase = 1.983 # wheel base for the vehicle
 d_lookahead = 0.1 # look ahead distance to calculate target point on path
 global n
@@ -118,7 +118,8 @@ def callback_feedback(data):
 	cmd1 = Twist()
 	prius_vel = Control()
 	L = 0
-	Lf = k * vel + d_lookahead
+	vel1 = max(vel,tar_vel)
+	Lf = k * vel1 + d_lookahead
 
 	while Lf > L and (cp + 1) < len(x_p.poses):
 		dx = data1.poses[cp + 1].pose.position.x - \
@@ -158,6 +159,7 @@ def callback_feedback(data):
 	print 'omega:', cmd.angular.z
 	cross_err.linear.z = path_length[cp]
 
+
 	pub1.publish(cmd)
 	pub2.publish(cross_err)
 	
@@ -194,18 +196,12 @@ def calc_path_length(data):
 
 def callback_path(data):
 
-	global ep # min distance
-	global cp # index of closest point
-	global ep_max
-	global ep_sum
-	global ep_avg
-	global n
-	global cp1
-	global path_length
+	now = rospy.get_rostime()
 	global x_p
-
 	x_p = data
 
+	then = rospy.get_rostime() - now
+	print "time = ",then
 
 def pure_pursuit(goal_point):
 	'''
@@ -241,8 +237,8 @@ def start():
 	global pub1
 	global pub2
 	rospy.init_node('path_tracking', anonymous=True)
-	pub2 = rospy.Publisher('cross_track_error', Twist, queue_size=100)
-	pub1 = rospy.Publisher('cmd_delta', Twist, queue_size=100)
+	pub2 = rospy.Publisher('cross_track_error', Twist, queue_size=5)
+	pub1 = rospy.Publisher('cmd_delta', Twist, queue_size=5)
 	rospy.Subscriber("/cmd_vel", Twist, callback_vel)
 	rospy.Subscriber("astroid_path", Path, callback_path)
 	rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)

@@ -58,7 +58,7 @@ def main():
 	x_offset, y_offset = set_params(x_offset,y_offset)
 	rospy.init_node('astroid_curve_publisher')
 	
-	path_pub = rospy.Publisher('astroid_path', Path, queue_size=100)
+	path_pub = rospy.Publisher('astroid_path', Path, queue_size=5)
 	path = Path()
 	quat = quaternion_from_euler(0, 0, -0.785398)
 

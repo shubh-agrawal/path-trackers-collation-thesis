@@ -45,12 +45,12 @@ def main():
 	gets path coordinates and publishes them in form of an array.
 
 	'''
-	x_offset = 100
-	y_offset = -30+375
+	x_offset = 100 
+	y_offset = 375 + 30
 	x_offset, y_offset = set_params(x_offset,y_offset)
 	rospy.init_node('astroid_curve_publisher')
 	
-	path_pub = rospy.Publisher('astroid_path', Path, queue_size=100)
+	path_pub = rospy.Publisher('astroid_path', Path, queue_size=5)
 	path = Path()
 
 	path.header.frame_id = rospy.get_param('~output_frame', 'map')
@@ -62,7 +62,7 @@ def main():
 	update_rate = rospy.get_param('~update_rate', 100) # rate of path publishing
 	has_initialize = True
 	# loop to get the path coordinates
-	for t in frange(0, math.pi/2, resolution):
+	for t in frange(3*math.pi/2, 2*math.pi + math.pi/2, resolution):
 		x = radius * math.cos(t) + int(offset_x) # add radius offset 
 		y = radius * math.sin(t) + int(offset_y)
 		if has_initialize:

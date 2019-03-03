@@ -32,7 +32,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: Main_Laser
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:

@@ -18,8 +18,7 @@ from std_msgs.msg import Int64
 # Subscribe topic- base_pose_ground_truth , astroid_path
 
 
-
-kp = 5.0  #gain parameter
+kp = 3.0  #gain parameter
 alpha = 0.1
 wheelbase = 1.983  #in meters
 global steer

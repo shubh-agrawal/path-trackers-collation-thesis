@@ -55,7 +55,7 @@ def main():
 
 	path.header.frame_id = rospy.get_param('~output_frame', 'map')
 	radius = rospy.get_param('~radius', 50.0) # radius of path
-	resolution = rospy.get_param('~resolution', 0.05) # constant jump value for parameter
+	resolution = rospy.get_param('~resolution', 0.4) # constant jump value for parameter
 	holonomic = rospy.get_param('~holonomic', False)
 	offset_x = rospy.get_param('~offset_x', x_offset) # get x offset from params
 	offset_y = rospy.get_param('~offset_y', y_offset) # get y offset from params

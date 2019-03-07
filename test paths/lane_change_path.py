@@ -8,11 +8,10 @@ Authors : Het Shah
 import rospy
 import tf
 from nav_msgs.msg import Path
+from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseStamped
 
 import math
-
-e = 2.7182818284
 
 def frange(x, y, jump):
 	'''
@@ -26,20 +25,20 @@ def frange(x, y, jump):
 		x += jump
 
 
-def set_params(x_offset, y_offset):
-	'''
-	Function to set params for path offset optionally
+# def set_params(x_offset, y_offset):
+# 	'''
+# 	Function to set params for path offset optionally
 
-	:params x_offset : Offset for x coordinate
-	:params y_offset : Offset for y coordinate
+# 	:params x_offset : Offset for x coordinate
+# 	:params y_offset : Offset for y coordinate
 
-	'''
-	print 'Do you want to change the path offset'
-	if raw_input('Press y to change else press n : ') == 'y':
-		x_offset = raw_input('enter x offset:')
-		y_offset = raw_input('enter y offset:')
+# 	'''
+# 	print 'Do you want to change the path offset'
+# 	if raw_input('Press y to change else press n : ') == 'y':
+# 		x_offset = raw_input('enter x offset:')
+# 		y_offset = raw_input('enter y offset:')
 
-	return x_offset, y_offset
+# 	return x_offset, y_offset
 
 
 def main():
@@ -47,12 +46,14 @@ def main():
 	gets path coordinates and publishes them in form of an array.
 
 	'''
-	x_offset = 100
-	y_offset = 375	
-	x_offset, y_offset = set_params(x_offset,y_offset)
+	global x_offset 
+	global y_offset 
 	rospy.init_node('astroid_curve_publisher')
 	
 	path_pub = rospy.Publisher('astroid_path', Path, queue_size=5)
+	odom_msg = rospy.wait_for_message('/base_pose_ground_truth', Odometry)
+	x_offset = odom_msg.pose.pose.position.x
+	y_offset = odom_msg.pose.pose.position.y
 	path = Path()
 
 	path.header.frame_id = rospy.get_param('~output_frame', 'map')

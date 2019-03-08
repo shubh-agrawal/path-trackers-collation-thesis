@@ -10,8 +10,13 @@ import tf
 from nav_msgs.msg import Path
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Twist
+import sys
 
 import math
+global tar_vel
+
+tar_vel = float(sys.argv[1])
 
 def frange(x, y, jump):
 	'''
@@ -51,6 +56,7 @@ def main():
 	rospy.init_node('astroid_curve_publisher')
 	
 	path_pub = rospy.Publisher('astroid_path', Path, queue_size=5)
+	vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=5)
 	odom_msg = rospy.wait_for_message('/base_pose_ground_truth', Odometry)
 	x_offset = odom_msg.pose.pose.position.x
 	y_offset = odom_msg.pose.pose.position.y + 30
@@ -95,11 +101,15 @@ def main():
 
 		old_x = x
 		old_y = y
+
+	vel = Twist()
+	vel.linear.x = tar_vel
 	
 	r = rospy.Rate(update_rate)
 	while not rospy.is_shutdown():
 		path.header.stamp = rospy.get_rostime()
 		path_pub.publish(path)
+		vel_pub.publish(vel)
 		
 		r.sleep()
 	

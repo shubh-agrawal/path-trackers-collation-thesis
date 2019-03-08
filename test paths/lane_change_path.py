@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
 path.py
-This code publishes a static lane change path(tan curve) in the form of an array for the bot to follow.
+This code publishes a static lane change path in the form of an array for the bot to follow.
 Used for path tracking with controller code
 Authors : Het Shah
 '''

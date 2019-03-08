@@ -8,13 +8,14 @@ Authors : Adarsh Patnaik
 import rospy
 import tf
 from nav_msgs.msg import Path
+from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Twist
 import sys
 
 import math
-
 global tar_vel
+
 tar_vel = float(sys.argv[1])
 
 def frange(x, y, jump):

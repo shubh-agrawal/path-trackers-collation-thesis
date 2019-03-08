@@ -20,14 +20,17 @@ from prius_msgs.msg import Control
 
 max_vel = 6.0 # maximum linear velocity
 global steer
-k = 2.5 # constant for relating look ahead distance and velocity
+k = 0 # constant for relating look ahead distance and velocity
 wheelbase = 1.983 # wheel base for the vehicle
-d_lookahead = 0.1 # look ahead distance to calculate target point on path
+d_lookahead = 5 # look ahead distance to calculate target point on path
 global n
 global ep_max
 global ep_sum
 global ep_avg
 global q
+moving_angle = []
+moving_error = []
+moving_error2 = []
 
 print ("start")
 q=0
@@ -61,6 +64,9 @@ def callback_feedback(data):
 	global cp1
 	global path_length
 	global x_p
+	global moving_angle
+	global moving_error
+	global moving_error2
 
 	x_bot = data.pose.pose.position.x
 	y_bot = data.pose.pose.position.y
@@ -104,15 +110,30 @@ def callback_feedback(data):
 	cross_prod = cross[0] * cross2[1] - cross[1] * cross2[0]
 	if (cross_prod > 0):
 		ep1 = -ep1
-
-	print 'ep_sum: ' , ep_sum
-	print 'ep_avg: ' , ep_avg
+	#Calculating the errors and moving errors for data plotting
 	cross_err.linear.x = ep1
-	cross_err.angular.x = ep_max
-	cross_err.angular.y = ep_avg
+	ep2 = ep1
+
+	moving_error.insert(0,ep1)
+	if(len(moving_error)>10):
+		moving_error.pop()
+	ep1 = 0
+	for i in range(len(moving_error)):
+		ep1 += moving_error[i]
+	ep1 = ep1/len(moving_error)
+
+	moving_error2.insert(0,ep2)
+	if(len(moving_error2)>5):
+		moving_error2.pop()
+	ep2 = 0
+	for i in range(len(moving_error2)):
+		ep2 += moving_error2[i]
+	ep2 = ep2/len(moving_error2)
+
+	cross_err.angular.x = ep1
+	cross_err.angular.y = ep2
 
 	   
-	print 'old index:', cp
 	# calculate index of target point on path
 	cmd = Twist()
 	cmd1 = Twist()
@@ -137,6 +158,16 @@ def callback_feedback(data):
 	error = [goal_point[0] - x_bot, goal_point[1] - y_bot]
 	print error
 	steer_angle = pure_pursuit(goal_point)
+
+
+	moving_angle.insert(0,steer_angle)
+	if(len(moving_angle)>5):
+		moving_angle.pop()
+	steer_angle = 0
+	for i in range(len(moving_angle)):
+		steer_angle += moving_angle[i]
+
+	steer_angle = steer_angle/len(moving_angle)
 
 	siny = +2.0 * (x_p.poses[cp].pose.orientation.w *
 				   x_p.poses[cp].pose.orientation.z +

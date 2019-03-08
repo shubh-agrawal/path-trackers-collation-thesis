@@ -8,11 +8,17 @@ Authors : Adarsh Patnaik
 import rospy
 import tf
 from nav_msgs.msg import Path
+from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Twist
 from tf.transformations import quaternion_from_euler
 import numpy as np
+import sys
 
 import math
+
+global tar_vel
+tar_vel = float(sys.argv[1])
 
 def frange(x, y, jump):
 	'''
@@ -26,20 +32,20 @@ def frange(x, y, jump):
 		x += jump
 
 
-def set_params(x_offset, y_offset):
-	'''
-	Function to set params for path offset optionally
+# def set_params(x_offset, y_offset):
+# 	'''
+# 	Function to set params for path offset optionally
 
-	:params x_offset : Offset for x coordinate
-	:params y_offset : Offset for y coordinate
+# 	:params x_offset : Offset for x coordinate
+# 	:params y_offset : Offset for y coordinate
 
-	'''
-	print 'Do you want to change the path offset'
-	if raw_input('Press y to change else press n : ') == 'y':
-		x_offset = raw_input('enter x offset:')
-		y_offset = raw_input('enter y offset:')
+# 	'''
+# 	print 'Do you want to change the path offset'
+# 	if raw_input('Press y to change else press n : ') == 'y':
+# 		x_offset = raw_input('enter x offset:')
+# 		y_offset = raw_input('enter y offset:')
 
-	return x_offset, y_offset
+# 	return x_offset, y_offset
 
 def get_quaternion_matrix(data):
 	mat = np.array([[(1 - 2*data[1]**2 - 2*data[2]**2), 2*(data[0]*data[1] - data[3]*data[2]), 2*(data[0]*data[2] + data[1] * data[3])], 
@@ -53,12 +59,15 @@ def main():
 	gets path coordinates and publishes them in form of an array.
 
 	'''
-	x_offset = 100
-	y_offset = 375
-	x_offset, y_offset = set_params(x_offset,y_offset)
+	global x_offset 
+	global y_offset 
 	rospy.init_node('astroid_curve_publisher')
 	
 	path_pub = rospy.Publisher('astroid_path', Path, queue_size=5)
+	vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=5)
+	odom_msg = rospy.wait_for_message('/base_pose_ground_truth', Odometry)
+	x_offset = odom_msg.pose.pose.position.x
+	y_offset = odom_msg.pose.pose.position.y
 	path = Path()
 	quat = quaternion_from_euler(0, 0, -0.785398)
 
@@ -84,8 +93,8 @@ def main():
 		rot_vector = np.dot(get_quaternion_matrix(quat), init_vector) 
 
 		pose = PoseStamped()
-		pose.pose.position.x = rot_vector[0] + int(offset_x)
-		pose.pose.position.y = rot_vector[1] + int(offset_y)
+		pose.pose.position.x = rot_vector[0] + float(offset_x)
+		pose.pose.position.y = rot_vector[1] + float(offset_y)
 
 		
 		
@@ -107,11 +116,15 @@ def main():
 
 		old_x = x
 		old_y = y
+
+	vel = Twist()
+	vel.linear.x = tar_vel
 	
 	r = rospy.Rate(update_rate)
 	while not rospy.is_shutdown():
 		path.header.stamp = rospy.get_rostime()
 		path_pub.publish(path)
+		vel_pub.publish(vel)
 		
 		r.sleep()
 	

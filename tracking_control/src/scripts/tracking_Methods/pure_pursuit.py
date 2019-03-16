@@ -226,13 +226,10 @@ def calc_path_length(data):
 
 
 def callback_path(data):
-
-	now = rospy.get_rostime()
+	
 	global x_p
 	x_p = data
 
-	then = rospy.get_rostime() - now
-	print "time = ",then
 
 def pure_pursuit(goal_point):
 	'''

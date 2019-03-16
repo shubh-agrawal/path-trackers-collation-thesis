@@ -18,7 +18,8 @@ from std_msgs.msg import Int64
 # Subscribe topic- base_pose_ground_truth , astroid_path
 
 
-kp = 3.0  #gain parameter
+kp = 0  #gain parameter
+ka = 3
 alpha = 0.1
 wheelbase = 1.983  #in meters
 global steer
@@ -27,6 +28,9 @@ global ep_max
 global ep_sum
 global ep_avg
 global x_p
+moving_angle = []
+moving_error = []
+moving_error2 = []
 
 n=0
 ep_avg = 0
@@ -106,10 +110,31 @@ def callback_feedback(data):
     if (cross_prod > 0):
         ep = -ep
     #print ("cp %f ep %+f" % (cp, ep))
+    ep1 = ep
+    # cross_err.linear.x = ep
+    # cross_err.angular.x = ep_max
+    # cross_err.angular.y = ep_avg
+    cross_err.linear.x = ep1
+    ep2 = ep1
 
-    cross_err.linear.x = ep
-    cross_err.angular.x = ep_max
-    cross_err.angular.y = ep_avg
+    moving_error.insert(0,ep1)
+    if(len(moving_error)>10):
+        moving_error.pop()
+    ep1 = 0
+    for i in range(len(moving_error)):
+        ep1 += moving_error[i]
+    ep1 = ep1/len(moving_error)
+
+    moving_error2.insert(0,ep2)
+    if(len(moving_error2)>5):
+        moving_error2.pop()
+    ep2 = 0
+    for i in range(len(moving_error2)):
+        ep2 += moving_error2[i]
+    ep2 = ep2/len(moving_error2)
+
+    cross_err.angular.x = ep1
+    cross_err.angular.y = ep2
 
     siny = +2.0 * (x_p.poses[cp].pose.orientation.w *
                    x_p.poses[cp].pose.orientation.z +
@@ -125,12 +150,21 @@ def callback_feedback(data):
 
 
     steer_err = (bot_theta - steer_path) * (-1)
-    # print "steer_error : ", steer_err, "\n"
-    tan = math.atan(ep / kp)   
-    # print "extra steer : ", tan, "\n"
+    
+    vel1 = max(tar_vel,bot_vel)
+
+    tan = math.atan(ep /(ka+kp*vel1))
 
     delta = (steer_err + tan)
-    #print ("steer err %f bot_theta %f steer_path %f" % (steer_err, bot_theta1, steer_path))
+
+    moving_angle.insert(0,delta)
+    if(len(moving_angle)>5):
+        moving_angle.pop()
+    delta = 0
+    for i in range(len(moving_angle)):
+        delta += moving_angle[i]
+
+    delta = delta/len(moving_angle)
 
     delta = delta * 180 / 3.14  #converting delta into degrees from radian
     delta = min(30,max(-30,delta))
@@ -169,24 +203,20 @@ def calc_path_length(data):
 
 def callback_path(data):
     
-    global ep
-    global cp
-    global bot_theta1
-    global ep_max
-    global ep_sum
-    global ep_avg
-    global n
-    global path_length
     global x_p
-
     x_p=data
+
+def callback_vel(data):
+    global tar_vel
+    tar_vel = data.linear.x
 
 def start():
     global pub1
     global pub2
     rospy.init_node('path_tracking', anonymous=True)
-    pub2 = rospy.Publisher('cross_track_error', Twist, queue_size=100)
-    pub1 = rospy.Publisher('cmd_delta', Twist, queue_size=100)
+    pub2 = rospy.Publisher('cross_track_error', Twist, queue_size=5)
+    pub1 = rospy.Publisher('cmd_delta', Twist, queue_size=5)
+    rospy.Subscriber("/cmd_vel", Twist, callback_vel)
     rospy.Subscriber("astroid_path", Path, callback_path)
     rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
     rospy.spin()

@@ -19,6 +19,9 @@ global ep_max
 global ep_sum
 global ep_avg
 global path_data
+moving_angle = []
+moving_error = []
+moving_error2 = []
 wheelbase = 1.983 
 kp = 0.1 		#proportional constant
 ki = 0.001		#integral constant
@@ -65,6 +68,9 @@ def callback_feedback(data):
 	global n
 	global cp1
 	global path_length
+	global moving_angle
+	global moving_error
+	global moving_error2
 
 	prev_cte = 0
 	diff_cte = 0
@@ -97,10 +103,34 @@ def callback_feedback(data):
 	if (cross_prod > 0):
 		distance_min = -distance_min 
 
+	#Calculating the errors and moving errors for data plotting
+	cross_err.linear.x = distance_min
+	ep1 = distance_min
+	ep2 = ep1
+
+	moving_error.insert(0,ep1)
+	if(len(moving_error)>10):
+		moving_error.pop()
+	ep1 = 0
+	for i in range(len(moving_error)):
+		ep1 += moving_error[i]
+	ep1 = ep1/len(moving_error)
+
+	moving_error2.insert(0,ep2)
+	if(len(moving_error2)>5):
+		moving_error2.pop()
+	ep2 = 0
+	for i in range(len(moving_error2)):
+		ep2 += moving_error2[i]
+	ep2 = ep2/len(moving_error2)
+
+	cross_err.angular.x = ep1
+	cross_err.angular.y = ep2
+
 	cross_track_err = distance_min   
 	cross_err.linear.x = cross_track_err
-	cross_err.angular.x = ep_max
-	cross_err.angular.y = ep_avg
+	# cross_err.angular.x = ep_max
+	# cross_err.angular.y = ep_avg
 
 	
 	siny = +2.0 * (path_data.poses[index].pose.orientation.w *
@@ -122,6 +152,14 @@ def callback_feedback(data):
 	sum_cte += cross_track_err
 	steering_angle = (kp * cross_track_err + kd * diff_cte + ki * sum_cte)
 	steering_angle = steering_angle * (180 / math.pi)
+	moving_angle.insert(0,steering_angle)
+	if(len(moving_angle)>5):
+		moving_angle.pop()
+	steering_angle = 0
+	for i in range(len(moving_angle)):
+		steering_angle += moving_angle[i]
+
+	steering_angle = steering_angle/len(moving_angle)
 	prev_cte = cross_track_err
 	cross_err.linear.y = steering_correction
 	cross_err.linear.z = path_length[index]

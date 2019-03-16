@@ -17,6 +17,7 @@ import numpy as np
 import scipy.linalg as la
 from prius_msgs.msg import Control
 
+
 class State:
 
 	def __init__(self, x=0.0, y=0.0, yaw=0.0, v=0.0):
@@ -53,6 +54,9 @@ n=0
 e_avg = 0
 e_sum = 0
 e_max = 0
+moving_angle = []
+moving_error = []
+moving_error2 = []
 
 def callback_vel(data):
 	global tar_vel
@@ -120,6 +124,9 @@ def callback_feedback(data):
 	global e_sum
 	global e_max
 	global pub2
+	global moving_angle
+	global moving_error
+	global moving_error2
 	
 	state.x = data.pose.pose.position.x
 	state.y = data.pose.pose.position.y
@@ -164,8 +171,27 @@ def callback_feedback(data):
 		print 'e_sum: ' , e_sum
 		print 'e_avg: ' , e_avg
 		cross_err.linear.x = e1
-		cross_err.angular.x = e_max
-		cross_err.angular.y = e_avg
+		e2 = e1
+		moving_error.insert(0,e1)
+		if(len(moving_error)>10):
+			moving_error.pop()
+		e1 = 0
+		for i in range(len(moving_error)):
+			e1 += moving_error[i]
+		e1 = e1/len(moving_error)
+
+		moving_error2.insert(0,e2)
+		if(len(moving_error2)>5):
+			moving_error2.pop()
+		e2 = 0
+		for i in range(len(moving_error2)):
+			e2 += moving_error2[i]
+		e2 = e2/len(moving_error2)
+
+		cross_err.angular.x = e1
+		cross_err.angular.y = e2
+		# cross_err.angular.x = e_max
+		# cross_err.angular.y = e_avg
 		cross_err.linear.z = path_length[ind]
 
 		path_angle = math.atan2(x_p.poses[ind].pose.position.y - x_p.poses[ind-1].pose.position.y,
@@ -176,6 +202,14 @@ def callback_feedback(data):
 
 		
 		delta_lqr, vel_throttle  = lqr_steering_control(state, e, e_th, pe, pe_th, x_p) 
+		moving_angle.insert(0,delta_lqr)
+		if(len(moving_angle)>5):
+			moving_angle.pop()
+		delta_lqr = 0
+		for i in range(len(moving_angle)):
+			delta_lqr += moving_angle[i]
+
+		delta_lqr = delta_lqr/len(moving_angle)
 		cmd_steer = Twist()
 		cmd_steer.linear.x = max(-1, min(1, vel_throttle))
 		cmd_steer.angular.z = max(-30, min(30, delta_lqr*180.0/math.pi))

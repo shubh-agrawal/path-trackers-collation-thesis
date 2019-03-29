@@ -221,7 +221,7 @@ def start():
     pub1 = rospy.Publisher('cmd_delta', Twist, queue_size=5)
     rospy.Subscriber("/cmd_vel", Twist, callback_vel)
     rospy.Subscriber("astroid_path", Path, callback_path)
-    rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
+    rospy.Subscriber("base_pose_ground_truth1", Odometry, callback_feedback)
     rospy.spin()
 
 

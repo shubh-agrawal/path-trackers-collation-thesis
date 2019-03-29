@@ -220,7 +220,7 @@ def start():
 	pub1 = rospy.Publisher('plot', Twist, queue_size=10)
 	rospy.Subscriber("cmd_vel", Twist, callback_cmd_vel)
 	rospy.Subscriber("cmd_delta", Twist, callback_delta)
-	rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
+	rospy.Subscriber("base_pose_ground_truth1", Odometry, callback_feedback)
 	rospy.spin()
 
 

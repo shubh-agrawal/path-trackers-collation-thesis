@@ -213,7 +213,7 @@ def start():
 	pub2 = rospy.Publisher('cross_track_error', Twist, queue_size=100)
 	pub = rospy.Publisher("cmd_delta", Twist, queue_size = 100)
 	rospy.Subscriber("astroid_path", Path, callback_path)
-	rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
+	rospy.Subscriber("base_pose_ground_truth1", Odometry, callback_feedback)
 	rospy.spin()
 
 if __name__ == '__main__':

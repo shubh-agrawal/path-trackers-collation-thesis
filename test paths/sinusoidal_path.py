@@ -65,7 +65,7 @@ def main():
 	
 	path_pub = rospy.Publisher('astroid_path', Path, queue_size=5)
 	vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=5)
-	odom_msg = rospy.wait_for_message('/base_pose_ground_truth', Odometry)
+	odom_msg = rospy.wait_for_message('/base_pose_ground_truth1', Odometry)
 	x_offset = odom_msg.pose.pose.position.x
 	y_offset = odom_msg.pose.pose.position.y
 	path = Path()
@@ -77,7 +77,7 @@ def main():
 	holonomic = rospy.get_param('~holonomic', False)
 	offset_x = rospy.get_param('~offset_x', x_offset) # get x offset from params
 	offset_y = rospy.get_param('~offset_y', y_offset) # get y offset from params
-	update_rate = rospy.get_param('~update_rate', 100) # rate of path publishing
+	update_rate = rospy.get_param('~update_rate', 30) # rate of path publishing
 	has_initialize = True
 	# loop to get the path coordinates
 	for t in frange(0, math.pi * 2, resolution):

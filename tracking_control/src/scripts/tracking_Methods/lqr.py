@@ -316,7 +316,7 @@ def main():
 	pub_vel = rospy.Publisher(ackermann_cmd_topic, Control, queue_size=5)
 	pub2 = rospy.Publisher('cross_track_error', Twist, queue_size=5)
 	rospy.Subscriber('cmd_vel', Twist, callback_vel, queue_size=5)
-	rospy.Subscriber("base_pose_ground_truth",Odometry, callback_feedback, queue_size=5)
+	rospy.Subscriber("base_pose_ground_truth1",Odometry, callback_feedback, queue_size=5)
 	rospy.Subscriber("astroid_path",Path, callback_path, queue_size=5)
 	# pub = rospy.Publisher("cmd_delta", Twist, queue_size=1)
 

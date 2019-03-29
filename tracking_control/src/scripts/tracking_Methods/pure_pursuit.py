@@ -20,14 +20,15 @@ from prius_msgs.msg import Control
 
 max_vel = 6.0 # maximum linear velocity
 global steer
-k = 0 # constant for relating look ahead distance and velocity
+k = 0.50 # constant for relating look ahead distance and velocity
 wheelbase = 1.983 # wheel base for the vehicle
-d_lookahead = 5 # look ahead distance to calculate target point on path
+d_lookahead = 1.5 # look ahead distance to calculate target point on path
 global n
 global ep_max
 global ep_sum
 global ep_avg
 global q
+global r
 moving_angle = []
 moving_error = []
 moving_error2 = []
@@ -81,6 +82,8 @@ def callback_feedback(data):
 						 data.pose.pose.orientation.z)
 	yaw = math.atan2(siny, cosy) # yaw in radians
 
+	print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+	print x_bot,y_bot
 	
 	vel = data.twist.twist.linear.x * cosy + data.twist.twist.linear.y * siny
 	cross_err = Twist()
@@ -91,7 +94,10 @@ def callback_feedback(data):
 	for i in range(len(x_p.poses)):
 		a = x_p.poses[i]
 		distances += [dist(a, x_bot, y_bot)]
+
 	ep = min(distances)
+	print distances[:10]
+	print "ep----------------------",ep 
 	ep1 = ep
 
 	if (ep > ep_max):
@@ -160,14 +166,14 @@ def callback_feedback(data):
 	steer_angle = pure_pursuit(goal_point)
 
 
-	moving_angle.insert(0,steer_angle)
-	if(len(moving_angle)>5):
-		moving_angle.pop()
-	steer_angle = 0
-	for i in range(len(moving_angle)):
-		steer_angle += moving_angle[i]
+	# moving_angle.insert(0,steer_angle)
+	# if(len(moving_angle)>5):
+	# 	moving_angle.pop()
+	# steer_angle = 0
+	# for i in range(len(moving_angle)):
+	# 	steer_angle += moving_angle[i]
 
-	steer_angle = steer_angle/len(moving_angle)
+	# steer_angle = steer_angle/len(moving_angle)
 
 	siny = +2.0 * (x_p.poses[cp].pose.orientation.w *
 				   x_p.poses[cp].pose.orientation.z +
@@ -191,6 +197,7 @@ def callback_feedback(data):
 	cross_err.linear.z = path_length[cp]
 
 
+	
 	pub1.publish(cmd)
 	pub2.publish(cross_err)
 	
@@ -198,6 +205,7 @@ def callback_feedback(data):
 
 	# print (ep)
 	print x_p.poses[cp].pose.orientation
+	# r.sleep()
 
 
 def dist(a, x, y):
@@ -229,6 +237,7 @@ def callback_path(data):
 	
 	global x_p
 	x_p = data
+
 
 
 def pure_pursuit(goal_point):
@@ -264,13 +273,15 @@ def callback_vel(data):
 def start():
 	global pub1
 	global pub2
+	global r
 	rospy.init_node('path_tracking', anonymous=True)
+	#r = rospy.Rate(10)
 	pub2 = rospy.Publisher('cross_track_error', Twist, queue_size=5)
 	pub1 = rospy.Publisher('cmd_delta', Twist, queue_size=5)
 	rospy.Subscriber("/cmd_vel", Twist, callback_vel)
 
 	rospy.Subscriber("astroid_path", Path, callback_path)
-	rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
+	rospy.Subscriber("base_pose_ground_truth1", Odometry, callback_feedback)
 	rospy.spin()
 
 

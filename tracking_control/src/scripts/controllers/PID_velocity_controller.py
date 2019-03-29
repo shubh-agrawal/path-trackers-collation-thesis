@@ -15,7 +15,7 @@ from prius_msgs.msg import Control
 
 # Node name       - controls
 # Published topic  - pid_output (Twist)
-# Subscribed topic - base_pose_ground_truth , cmd_vel, cmd_delta 
+# Subscribed topic - base_pose_ground_truth1 , cmd_vel, cmd_delta 
 
 gear_stat = "F"
 tar_vel = 0 # target velocity
@@ -38,6 +38,7 @@ global pub
 global tar_vel
 global tar_omega
 global tar_delta
+global r
 tar_vel = 0
 tar_omega = 0
 
@@ -152,7 +153,7 @@ def callback_feedback(data):
 	# publish the msg
 	prius_pub(output)
 	pub1.publish(plot)
-
+	# r.sleep()
 
 def callback_cmd_vel(data):
 	'''
@@ -180,13 +181,15 @@ def callback_delta(data):
 def start():
 	global pub
 	global pub1
+	global r
 	ackermann_cmd_topic = rospy.get_param('~ackermann_cmd_topic', '/prius')
 	rospy.init_node('controls', anonymous=True)
+	r = rospy.Rate(10)
 	pub = rospy.Publisher(ackermann_cmd_topic, Control, queue_size=5)
 	pub1 = rospy.Publisher('plot', Twist, queue_size=5)
 	rospy.Subscriber("cmd_vel", Twist, callback_cmd_vel)
 	rospy.Subscriber("cmd_delta", Twist, callback_delta)
-	rospy.Subscriber("base_pose_ground_truth", Odometry, callback_feedback)
+	rospy.Subscriber("base_pose_ground_truth1", Odometry, callback_feedback)
 	rospy.spin()
 
 

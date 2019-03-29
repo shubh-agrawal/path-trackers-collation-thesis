@@ -19,7 +19,7 @@ from std_msgs.msg import Int64
 
 
 kp = 0  #gain parameter
-ka = 3
+ka = 10  
 alpha = 0.1
 wheelbase = 1.983  #in meters
 global steer
@@ -27,7 +27,7 @@ global n
 global ep_max
 global ep_sum
 global ep_avg
-global x_p
+global x_ps
 moving_angle = []
 moving_error = []
 moving_error2 = []
@@ -146,17 +146,20 @@ def callback_feedback(data):
                          x_p.poses[cp].pose.orientation.z)
 
     
-    steer_path = math.atan2(x_p.poses[cp].pose.position.y - x_p.poses[cp-1].pose.position.y, x_p.poses[cp].pose.position.x - x_p.poses[cp-1].pose.position.x )
-
+    if(cp!=0):
+        steer_path = math.atan2(x_p.poses[cp].pose.position.y - x_p.poses[cp-1].pose.position.y, x_p.poses[cp].pose.position.x - x_p.poses[cp-1].pose.position.x )
+    else:
+        steer_path = 0
 
     steer_err = (bot_theta - steer_path) * (-1)
     
     vel1 = max(tar_vel,bot_vel)
 
     tan = math.atan(ep /(ka+kp*vel1))
-
+    print "steer_err=",steer_err
     delta = (steer_err + tan)
-
+    print "xxxxxxxxxxxxxxxxx"
+    print delta*180/3.14
     moving_angle.insert(0,delta)
     if(len(moving_angle)>5):
         moving_angle.pop()

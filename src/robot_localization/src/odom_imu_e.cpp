@@ -19,10 +19,10 @@ OdometryImuCombiner::OdometryImuCombiner() {
 void OdometryImuCombiner::odomCallback(const geometry_msgs::Twist msg)
 {
   if (ros::ok())
-{
+  {
     vr=msg.linear.y*(5.0/18);//fix for kmph to mps for mahindra car
     vl=msg.linear.x*(5.0/18);
-    v=(vl+vr)/2
+    v=(vl+vr)/2;
 
   }
 }
@@ -131,8 +131,8 @@ int main(int argc, char** argv){
     ros::Subscriber odom_sub=n.subscribe<geometry_msgs::Twist>("/encoders",5, &OdometryImuCombiner::odomCallback, &combiner);   // Roboteq publishes on result_vel
     //ros::Subscriber odom_sub = n.subscribe<nav_msgs::Odometry>("odom", 50, &OdometryImuCombiner::odomCallback, &combiner);
     ros::Subscriber imu_sub = n.subscribe<sensor_msgs::Imu>("vn_ins/imu", 5, &OdometryImuCombiner::imuCallback, &combiner);
-    ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom_imu_combined", 5);
-    ros::Publisher yaw_pub = n.advertise<std_msgs::Float64>("robot_localiztion/yaw_filtered",5);
+    ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom_imu_combined_e", 5);
+    ros::Publisher yaw_pub = n.advertise<std_msgs::Float64>("robot_localiztion/yaw_filtered_e",5);
 
     ros::Rate rate(40);
 

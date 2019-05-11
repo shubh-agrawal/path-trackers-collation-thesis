@@ -16,8 +16,10 @@
   <node pkg="robot_localization" type="gps" name="gps1" clear_params="true"/>
   <node pkg="robot_localization" type="odom_imu_e" name="odom_imu_e" clear_params="true"/>
   <node pkg="robot_localization" type="odom_c_e" name="odom_corr1_e" clear_params="true"/>
+  <node pkg="robot_localization" type="odom_imu" name="odom_imu1" clear_params="true"/>
+  <node pkg="robot_localization" type="odom_c" name="odom_corr1" clear_params="true"/>
 
-  <rosparam command="load" file="$(find robot_localization)/params/dual_ekf_navsat_example.yaml" />
+  <rosparam command="load" file="$(find robot_localization)/params/dual_ekf_navsat_f.yaml" />
 
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_odom" clear_params="true"/>
 

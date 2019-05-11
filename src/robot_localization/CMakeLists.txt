@@ -127,6 +127,8 @@ add_executable(gps src/gps.cpp)
 add_executable(imu src/imu.cpp)
 add_executable(odom_c src/odom_c.cpp)
 add_executable(odom_imu src/odom_imu.cpp)
+add_executable(odom_corr_e src/odom_c_e.cpp)
+add_executable(odom_imu_e src/odom_imu_e.cpp)
 
 # Dependencies
 add_dependencies(filter_base robot_localization_gencpp)
@@ -152,6 +154,8 @@ target_link_libraries(imu ${catkin_LIBRARIES})
 target_link_libraries(gps ${catkin_LIBRARIES})
 target_link_libraries(odom_imu ${catkin_LIBRARIES})
 target_link_libraries(odom_c ${catkin_LIBRARIES})
+target_link_libraries(odom_imu_e ${catkin_LIBRARIES})
+target_link_libraries(odom_corr_e ${catkin_LIBRARIES})
 #############
 ## Install ##
 #############
